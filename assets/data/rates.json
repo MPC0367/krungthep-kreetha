@@ -1,0 +1,54 @@
+{
+  "note": "The single rate source. Homepage, rates page, tee-time search, checkout and staff console all read this file through src/core/rates.js. Amounts are integer satang. 'published' versions come from the club's own posters; nothing here is approved by the club yet.",
+  "currency": "THB",
+  "versions": [
+    {
+      "id": "KK-RATES-2026-11-WEB",
+      "status": "PUBLISHED_UNCONFIRMED",
+      "label": { "th": "อัตราตามโปสเตอร์บนเว็บไซต์สมาคม พฤศจิกายน 2569", "en": "Rates as shown on the club's website posters, November 2026" },
+      "effectiveFrom": "2026-11-01",
+      "effectiveTo": null,
+      "source": "S04b visitor package poster (uploaded 2026-11); S04c twilight poster",
+      "plans": [
+        { "id": "visitor-package-weekday", "category": "visitor", "sessions": ["morning", "afternoon"], "dayType": "weekday", "perGolferMinor": 360000,
+          "includes": ["green_fee", "caddie", "cart"], "name": { "th": "แพ็กเกจนักกอล์ฟทั่วไป วันธรรมดา", "en": "Visitor package, weekdays" } },
+        { "id": "visitor-package-weekend", "category": "visitor", "sessions": ["morning", "afternoon"], "dayType": "weekend_holiday", "perGolferMinor": 410000,
+          "includes": ["green_fee", "caddie", "cart"], "name": { "th": "แพ็กเกจนักกอล์ฟทั่วไป เสาร์ อาทิตย์ และวันหยุด", "en": "Visitor package, weekends and holidays" } },
+        { "id": "twilight-walkin-weekday", "category": "visitor", "sessions": ["twilight"], "dayType": "weekday", "perGolferMinor": 220000,
+          "name": { "th": "ทไวไลท์ นักกอล์ฟทั่วไป วันธรรมดา", "en": "Twilight, walk-in golfer, weekdays" } },
+        { "id": "twilight-walkin-weekend", "category": "visitor", "sessions": ["twilight"], "dayType": "weekend_holiday", "perGolferMinor": 245000,
+          "name": { "th": "ทไวไลท์ นักกอล์ฟทั่วไป วันหยุด", "en": "Twilight, walk-in golfer, weekends" } },
+        { "id": "twilight-guest-weekday", "category": "member_guest", "sessions": ["twilight"], "dayType": "weekday", "perGolferMinor": 160000,
+          "name": { "th": "ทไวไลท์ แขกของสมาชิก วันธรรมดา", "en": "Twilight, member's guest, weekdays" } },
+        { "id": "twilight-guest-weekend", "category": "member_guest", "sessions": ["twilight"], "dayType": "weekend_holiday", "perGolferMinor": 185000,
+          "name": { "th": "ทไวไลท์ แขกของสมาชิก วันหยุด", "en": "Twilight, member's guest, weekends" } },
+        { "id": "member-account", "category": "member", "sessions": ["morning", "afternoon", "twilight"], "dayType": "any", "priceMode": "member_account",
+          "name": { "th": "สมาชิก ชำระผ่านบัญชีสมาชิก", "en": "Member, charged to the member account" } }
+      ],
+      "notes": {
+        "twilight": { "th": ["ไม่ร่วมรายการบัตรกำนัลทุกประเภท", "อนุญาตให้รถกอล์ฟลงแฟร์เวย์ ขึ้นอยู่กับสภาพอากาศ", "ไม่มีเรนเช็กหลังเล่นไปแล้ว 3 หลุม"], "en": ["Complimentary vouchers of any kind are excluded.", "Carts may go on the fairway, subject to weather.", "No rain checks after 3 holes played."] }
+      }
+    }
+  ],
+  "addOns": {
+    "source": "S04 pricing page (retrieved 2026-11-18; date of the rate not stated)",
+    "items": [
+      { "id": "cart-hour", "name": { "th": "ค่าเช่ารถกอล์ฟ", "en": "Golf cart rental" }, "minor": 20000, "unit": { "th": "ต่อชั่วโมง", "en": "per hour" } },
+      { "id": "caddie-18", "name": { "th": "ค่าแคดดี้ 18 หลุม", "en": "Caddie, 18 holes" }, "minor": 40000, "unit": { "th": "ต่อรอบ", "en": "per round" } }
+    ],
+    "unclear": { "th": "หน้าราคาระบุ 'ต่อรอบ 3 จำนวน 9 หลุม + 200 บาท' ความหมายยังไม่ชัดเจน รอยืนยันกับสมาคม", "en": "The pricing page also says 'per round 3, 9 holes + 200 baht'; the meaning is unclear and waits for the club's confirmation." }
+  },
+  "courseHire": {
+    "source": "S04 pricing page",
+    "validity": { "th": "ราคาปิดสนามนี้ ภายในปี 2569 เท่านั้น", "en": "Course-hire prices valid within 2026 only" },
+    "days": { "th": "เฉพาะวันจันทร์", "en": "Mondays only" },
+    "sessions": [
+      { "id": "half-day", "name": { "th": "การแข่งขันกอล์ฟครึ่งวัน", "en": "Half-day tournament" }, "minor": 25000000, "includes": { "th": "รวมรถกอล์ฟ 150 คัน", "en": "Includes 150 golf carts" } },
+      { "id": "full-day", "name": { "th": "การแข่งขันกอล์ฟเต็มวัน", "en": "Full-day tournament" }, "minor": 35000000, "includes": { "th": "รวมรถกอล์ฟ 150 คันต่อรอบ", "en": "Includes 150 golf carts per round" } }
+    ],
+    "rounds": { "th": [["รอบเช้า", "06.00 ถึง 11.30 น."], ["รอบบ่าย", "12.30 ถึง 18.00 น."]], "en": [["Morning", "06:00 to 11:30"], ["Afternoon", "12:30 to 18:00"]] }
+  },
+  "archived": [
+    { "id": "promo-2025-tue-fri", "name": { "th": "แพ็กเกจ 2,000 บาท ทุกวันอังคารและศุกร์ (ปี 2568)", "en": "THB 2,000 package every Tuesday and Friday (2025)" }, "reason": { "th": "โปรโมชันปี 2568 สิ้นสุดแล้ว", "en": "A 2025 promotion; no longer current" }, "source": "S04 promotion page poster" }
+  ]
+}

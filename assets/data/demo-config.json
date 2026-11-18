@@ -1,0 +1,178 @@
+{
+ "note": "Demonstration settings. Every value here is illustrative and waits for the committee (Appendix B). The website reads it through the same contracts the live system will use, so replacing this file does not change the interface.",
+ "mode": "demo",
+ "timezone": "Asia/Bangkok",
+ "schedule": {
+  "horizonDays": 14,
+  "capacityModel": "seat",
+  "maxGroup": 4,
+  "holdMinutes": 10,
+  "paymentWindowMinutes": 15,
+  "turnMinutes": 135,
+  "turnSource": "Club rule poster: 9 holes take 2 hours 15 minutes",
+  "days": {
+   "mon": {
+    "closed": true,
+    "reason": "course-hire"
+   },
+   "default": {
+    "sessions": [
+     {
+      "id": "morning",
+      "start": "06:00",
+      "end": "08:30",
+      "interval": 30,
+      "tees": [
+       "1",
+       "10"
+      ]
+     },
+     {
+      "id": "morning",
+      "start": "09:00",
+      "end": "10:30",
+      "interval": 30,
+      "tees": [
+       "1"
+      ]
+     },
+     {
+      "id": "afternoon",
+      "start": "11:00",
+      "end": "14:30",
+      "interval": 30,
+      "tees": [
+       "1"
+      ]
+     },
+     {
+      "id": "twilight",
+      "start": "15:00",
+      "end": "15:00",
+      "interval": 30,
+      "tees": [
+       "1"
+      ],
+      "source": "Twilight poster: tee times 14:45 to 15:15; on the half-hour grid that is the 15:00 start"
+     }
+    ]
+   }
+  },
+  "memberOnly": [
+   {
+    "days": [
+     "sat",
+     "sun"
+    ],
+    "from": "06:00",
+    "to": "07:00"
+   }
+  ],
+  "intervalNote": "Tee times every 30 minutes, on the hour and half hour (client request, 18 Nov 2026)"
+ },
+ "holidays": {
+  "note": "Demo holiday list. Confirm against the club's calendar.",
+  "dates": [
+   "2026-12-05",
+   "2026-12-07",
+   "2026-12-10",
+   "2026-12-31",
+   "2027-01-01"
+  ]
+ },
+ "policy": {
+  "id": "KK-POLICY-DEMO-1",
+  "version": 1,
+  "illustrative": true,
+  "deposit": {
+   "basis": "per_golfer",
+   "amountMinor": 50000,
+   "source": "Visitor package poster: 'A booking deposit of THB 500 will be credited toward your green fee'. Per-golfer basis is our assumption."
+  },
+  "cancellation": {
+   "freeUntilHoursBefore": 48,
+   "afterDeadline": "retain_deposit"
+  },
+  "noShow": {
+   "graceMinutes": 30,
+   "treatment": "retain_deposit"
+  },
+  "partialAttendance": "retain_absent_share",
+  "clubClosure": "refund_or_reschedule",
+  "reschedule": {
+   "limit": 1,
+   "untilHoursBefore": 48
+  }
+ },
+ "conditions": {
+  "agingAfterHours": 6,
+  "defaultValidHours": 14,
+  "plausibleFeet": [
+   6,
+   14
+  ],
+  "unit": "ft"
+ },
+ "demoMembers": [
+  {
+   "number": "D-0001",
+   "name": "Demo Member One",
+   "status": "active"
+  },
+  {
+   "number": "D-0002",
+   "name": "Demo Member Two",
+   "status": "suspended"
+  }
+ ],
+ "staffUsers": [
+  {
+   "id": "u-admin",
+   "name": {
+    "th": "ผู้ดูแลระบบ (ตัวอย่าง)",
+    "en": "Administrator (demo)"
+   },
+   "role": "admin"
+  },
+  {
+   "id": "u-reception",
+   "name": {
+    "th": "เคาน์เตอร์รับจอง (ตัวอย่าง)",
+    "en": "Reception (demo)"
+   },
+   "role": "reception"
+  },
+  {
+   "id": "u-green",
+   "name": {
+    "th": "ฝ่ายดูแลสนาม (ตัวอย่าง)",
+    "en": "Greenkeeper (demo)"
+   },
+   "role": "greenkeeper"
+  },
+  {
+   "id": "u-editor",
+   "name": {
+    "th": "ผู้ดูแลเนื้อหา (ตัวอย่าง)",
+    "en": "Content editor (demo)"
+   },
+   "role": "editor"
+  },
+  {
+   "id": "u-finance",
+   "name": {
+    "th": "ฝ่ายการเงิน (ตัวอย่าง)",
+    "en": "Finance (demo)"
+   },
+   "role": "finance"
+  },
+  {
+   "id": "u-committee",
+   "name": {
+    "th": "กรรมการ อ่านอย่างเดียว (ตัวอย่าง)",
+    "en": "Committee, read only (demo)"
+   },
+   "role": "committee"
+  }
+ ]
+}

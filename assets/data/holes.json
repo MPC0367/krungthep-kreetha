@@ -1,0 +1,880 @@
+{
+  "note": "One record per hole. Par is read from the club's hole diagram; tee yardages from the club's hole page text (S02). Stroke index and tee colours are not published anywhere we could find. Descriptions are drawn from the club's diagram and wait for the club's review.",
+  "retrieved": "2026-11-18",
+  "teeSets": [
+    {
+      "id": "1",
+      "name": {
+        "th": "แท่นที 1",
+        "en": "Tee 1"
+      },
+      "shape": "circle",
+      "note": "Numbered markers on the club diagrams. Colours not published."
+    },
+    {
+      "id": "2",
+      "name": {
+        "th": "แท่นที 2",
+        "en": "Tee 2"
+      },
+      "shape": "square"
+    },
+    {
+      "id": "3",
+      "name": {
+        "th": "แท่นที 3",
+        "en": "Tee 3"
+      },
+      "shape": "triangle"
+    },
+    {
+      "id": "4",
+      "name": {
+        "th": "แท่นที 4",
+        "en": "Tee 4"
+      },
+      "shape": "diamond"
+    },
+    {
+      "id": "5",
+      "name": {
+        "th": "แท่นที 5",
+        "en": "Tee 5"
+      },
+      "shape": "hexagon",
+      "note": "Only on holes 5, 7, 11, 15 and 17."
+    }
+  ],
+  "holes": [
+    {
+      "number": 1,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 377
+        },
+        {
+          "id": "2",
+          "yards": 352
+        },
+        {
+          "id": "3",
+          "yards": 328
+        },
+        {
+          "id": "4",
+          "yards": null,
+          "conflict": {
+            "en": "Hole page says 302, diagram table says 307",
+            "th": "หน้าหลุมระบุ 302 หลา แต่ตารางในแผนผังระบุ 307 หลา"
+          }
+        }
+      ],
+      "photos": [
+        "h01-01",
+        "h01-02",
+        "h01-03",
+        "h01-04",
+        "h01-05"
+      ],
+      "diagram": "diagram-01",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole1/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-left",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A lake runs the whole left side, from the tee to the green. A chain of bunkers sits between the fairway and the water, so the safer line is the right half of the fairway. Two bunkers wait short and left of the green.",
+        "th": "บ่อน้ำทอดยาวตลอดฝั่งซ้ายตั้งแต่แท่นทีจนถึงกรีน มีบังเกอร์เรียงเป็นแนวคั่นระหว่างแฟร์เวย์กับน้ำ ไลน์ที่ปลอดภัยจึงอยู่ครึ่งขวาของแฟร์เวย์ และมีบังเกอร์สองหลุมดักอยู่หน้ากรีนด้านซ้าย"
+      }
+    },
+    {
+      "number": 2,
+      "par": 5,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 549
+        },
+        {
+          "id": "2",
+          "yards": 519
+        },
+        {
+          "id": "3",
+          "yards": 488
+        },
+        {
+          "id": "4",
+          "yards": 443
+        }
+      ],
+      "photos": [
+        "h02-01",
+        "h02-02",
+        "h02-03",
+        "h02-04",
+        "h02-05"
+      ],
+      "diagram": "diagram-02",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole2/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-right",
+        "water-left",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "The longest hole on the front nine. Water follows the entire right side, and ponds sit left of the tees and left of the third-shot area. A large bunker guards the right of the green, with water behind it.",
+        "th": "หลุมที่ยาวที่สุดของเก้าหลุมแรก น้ำเลียบไปตลอดฝั่งขวา มีบ่อน้ำอยู่ซ้ายของแท่นทีและซ้ายของจุดตีช็อตที่สาม บังเกอร์ใหญ่คุมด้านขวาของกรีน และมีน้ำอยู่หลังกรีน"
+      }
+    },
+    {
+      "number": 3,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 360
+        },
+        {
+          "id": "2",
+          "yards": 334
+        },
+        {
+          "id": "3",
+          "yards": 324
+        },
+        {
+          "id": "4",
+          "yards": 300
+        }
+      ],
+      "photos": [
+        "h03-01",
+        "h03-02",
+        "h03-03",
+        "h03-04"
+      ],
+      "diagram": "diagram-03",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole3/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-left",
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A straight par 4 with water on both sides of the tee shot: a long lake on the left and water on the right. Bunkers frame the fairway, and the green is guarded left and right.",
+        "th": "พาร์ 4 ทางตรง ช็อตแรกมีน้ำขนาบทั้งสองฝั่ง ทะเลสาบยาวทางซ้ายและน้ำทางขวา บังเกอร์วางกรอบแฟร์เวย์ไว้ และกรีนมีบังเกอร์คุมทั้งซ้ายและขวา"
+      }
+    },
+    {
+      "number": 4,
+      "par": 3,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 152
+        },
+        {
+          "id": "2",
+          "yards": 141
+        },
+        {
+          "id": "3",
+          "yards": 121
+        },
+        {
+          "id": "4",
+          "yards": 104
+        }
+      ],
+      "photos": [
+        "h04-01",
+        "h04-02",
+        "h04-03"
+      ],
+      "diagram": "diagram-04",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole4/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-carry",
+        "greenside-bunkers",
+        "penalty-line-drawn"
+      ],
+      "description": {
+        "en": "A short par 3 to a green almost surrounded by water. Every tee plays across the lake. Bunkers wrap the back left, front left and right of the green, so the middle of the putting surface is the target.",
+        "th": "พาร์ 3 ระยะสั้น ตีเข้ากรีนที่มีน้ำล้อมเกือบรอบ ทุกแท่นทีต้องตีข้ามทะเลสาบ บังเกอร์โอบด้านหลังซ้าย หน้าซ้าย และขวาของกรีน เป้าหมายจึงอยู่กลางกรีน"
+      }
+    },
+    {
+      "number": 5,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 436
+        },
+        {
+          "id": "2",
+          "yards": 408
+        },
+        {
+          "id": "3",
+          "yards": 388
+        },
+        {
+          "id": "4",
+          "yards": 361
+        },
+        {
+          "id": "5",
+          "yards": 322
+        }
+      ],
+      "photos": [
+        "h05-01",
+        "h05-02",
+        "h05-03",
+        "h05-04",
+        "h05-05",
+        "h05-06"
+      ],
+      "diagram": "diagram-05",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole5/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-left",
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A long par 4 that bends gently right. Water runs down the left from tee to green, and a pond sits right of the approach. Bunkers line both sides of the fairway, with more left of and behind the green.",
+        "th": "พาร์ 4 ระยะยาว โค้งขวาเล็กน้อย น้ำเลียบฝั่งซ้ายตั้งแต่แท่นทีถึงกรีน และมีบ่อน้ำทางขวาของช็อตเข้ากรีน บังเกอร์เรียงอยู่ทั้งสองฝั่งแฟร์เวย์ และยังมีบังเกอร์ซ้ายและหลังกรีน"
+      }
+    },
+    {
+      "number": 6,
+      "par": 5,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 480
+        },
+        {
+          "id": "2",
+          "yards": 462
+        },
+        {
+          "id": "3",
+          "yards": 437
+        },
+        {
+          "id": "4",
+          "yards": 412
+        }
+      ],
+      "photos": [
+        "h06-01",
+        "h06-02",
+        "h06-03",
+        "h06-04",
+        "h06-05",
+        "h06-06"
+      ],
+      "diagram": "diagram-06",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole6/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "creek-crossing",
+        "water-left",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A creek runs down the left of the tee shot and crosses the hole twice before the green. A bunker sits left of the second-shot area and another guards the right of a long, narrow green.",
+        "th": "ลำรางน้ำไหลเลียบด้านซ้ายของช็อตแรก แล้วตัดผ่านหลุมสองครั้งก่อนถึงกรีน มีบังเกอร์อยู่ซ้ายของจุดตีช็อตที่สอง และอีกหลุมคุมด้านขวาของกรีนที่ยาวและแคบ"
+      }
+    },
+    {
+      "number": 7,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 454
+        },
+        {
+          "id": "2",
+          "yards": 411
+        },
+        {
+          "id": "3",
+          "yards": 383
+        },
+        {
+          "id": "4",
+          "yards": 357
+        },
+        {
+          "id": "5",
+          "yards": 342
+        }
+      ],
+      "photos": [
+        "h07-01",
+        "h07-02",
+        "h07-04",
+        "h07-05",
+        "h07-06",
+        "h07-07",
+        "h07-08"
+      ],
+      "diagram": "diagram-07",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole7/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "featured": true,
+      "features": [
+        "tee-in-water",
+        "water-left",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "Tee 1 sits on a small island inside a pond, so the longest version starts with a carry over water. A second pond waits left of the landing area. A large bunker guards the left of the approach and a cluster of bunkers sits right of the green.",
+        "th": "แท่นที 1 ตั้งอยู่บนเกาะเล็กกลางบ่อน้ำ ระยะเต็มจึงเริ่มด้วยการตีข้ามน้ำ มีบ่อน้ำอีกแห่งรออยู่ซ้ายของจุดตกลูก บังเกอร์ใหญ่คุมด้านซ้ายของช็อตเข้ากรีน และมีกลุ่มบังเกอร์อยู่ขวาของกรีน"
+      }
+    },
+    {
+      "number": 8,
+      "par": 3,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 185
+        },
+        {
+          "id": "2",
+          "yards": 174
+        },
+        {
+          "id": "3",
+          "yards": 150
+        },
+        {
+          "id": "4",
+          "yards": 138
+        }
+      ],
+      "photos": [
+        "h08-01",
+        "h08-02",
+        "h08-03",
+        "h08-04",
+        "h08-05"
+      ],
+      "diagram": "diagram-08",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole8/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-right",
+        "greenside-bunkers",
+        "penalty-line-drawn"
+      ],
+      "description": {
+        "en": "A par 3 played alongside a lake on the right, with the cart path down the left. The green is ringed by bunkers behind, to the right and short left.",
+        "th": "พาร์ 3 ตีเลียบทะเลสาบทางขวา โดยมีทางรถกอล์ฟอยู่ฝั่งซ้าย กรีนถูกล้อมด้วยบังเกอร์ทั้งด้านหลัง ด้านขวา และหน้าซ้าย"
+      }
+    },
+    {
+      "number": 9,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 403
+        },
+        {
+          "id": "2",
+          "yards": 369
+        },
+        {
+          "id": "3",
+          "yards": 328
+        },
+        {
+          "id": "4",
+          "yards": 307
+        }
+      ],
+      "photos": [
+        "h09-01",
+        "h09-02",
+        "h09-03",
+        "h09-04",
+        "h09-05"
+      ],
+      "diagram": "diagram-09",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole9/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-left",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "The front nine closes with water along the entire left side. Bunkers sit on the left edge of the fairway and to the right of the green.",
+        "th": "หลุมปิดท้ายเก้าหลุมแรก มีน้ำเลียบตลอดฝั่งซ้าย บังเกอร์อยู่ริมซ้ายของแฟร์เวย์ และอยู่ทางขวาของกรีน"
+      }
+    },
+    {
+      "number": 10,
+      "par": null,
+      "tees": [],
+      "photos": [],
+      "diagram": null,
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole10/",
+      "production": {
+        "status": "SOURCE_NEEDED",
+        "display": "PENDING_SOURCE"
+      },
+      "issues": [
+        {
+          "en": "The hole 10 page shows the hole 12 diagram, hole 12 photographs and the hole 12 yardages. No hole 10 data is published.",
+          "th": "หน้าหลุมที่ 10 บนเว็บไซต์สมาคมแสดงแผนผัง ภาพถ่าย และระยะของหลุมที่ 12 จึงยังไม่มีข้อมูลของหลุมที่ 10 เผยแพร่"
+        }
+      ],
+      "features": [],
+      "description": {
+        "en": "Details for hole 10 are being confirmed with the club. The scorecard, diagram and photographs will appear here once the club supplies them.",
+        "th": "ข้อมูลหลุมที่ 10 อยู่ระหว่างยืนยันกับสมาคม สกอร์การ์ด แผนผัง และภาพถ่ายจะแสดงที่นี่เมื่อได้รับข้อมูลจากสมาคม"
+      }
+    },
+    {
+      "number": 11,
+      "par": 5,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 530
+        },
+        {
+          "id": "2",
+          "yards": 519
+        },
+        {
+          "id": "3",
+          "yards": 508
+        },
+        {
+          "id": "4",
+          "yards": 490
+        },
+        {
+          "id": "5",
+          "yards": 430
+        }
+      ],
+      "photos": [
+        "h11-01",
+        "h11-02",
+        "h11-03",
+        "h11-04",
+        "h11-05",
+        "h11-06",
+        "h11-07"
+      ],
+      "diagram": "diagram-11",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole11/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-right",
+        "water-left",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A long par 5 with a pond beside the tees and a creek that follows the right side through the middle of the hole. Another pond sits right of the approach, and bunkers guard the right and back of the green.",
+        "th": "พาร์ 5 ระยะยาว มีบ่อน้ำอยู่ข้างแท่นที และลำรางน้ำเลียบฝั่งขวาช่วงกลางหลุม มีบ่อน้ำอีกแห่งอยู่ขวาของช็อตเข้ากรีน และบังเกอร์คุมด้านขวาและหลังกรีน"
+      }
+    },
+    {
+      "number": 12,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 402
+        },
+        {
+          "id": "2",
+          "yards": 376
+        },
+        {
+          "id": "3",
+          "yards": 358
+        },
+        {
+          "id": "4",
+          "yards": 329
+        }
+      ],
+      "photos": [
+        "h12-01",
+        "h12-02",
+        "h12-03",
+        "h12-04",
+        "h12-05",
+        "h12-06"
+      ],
+      "diagram": "diagram-12",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole12/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A pond sits right of the tee shot. Large bunkers wait on both sides of the fairway further up, and the green is protected left, right and behind.",
+        "th": "มีบ่อน้ำอยู่ทางขวาของช็อตแรก ถัดขึ้นไปมีบังเกอร์ใหญ่รออยู่ทั้งสองฝั่งแฟร์เวย์ และกรีนมีบังเกอร์คุมทั้งซ้าย ขวา และด้านหลัง"
+      }
+    },
+    {
+      "number": 13,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 363
+        },
+        {
+          "id": "2",
+          "yards": 351
+        },
+        {
+          "id": "3",
+          "yards": 333
+        },
+        {
+          "id": "4",
+          "yards": 314
+        }
+      ],
+      "photos": [
+        "h13-01",
+        "h13-02",
+        "h13-03",
+        "h13-04",
+        "h13-05"
+      ],
+      "diagram": "diagram-13",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole13/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-left",
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "A pond lies left of the tees and a lake follows the right side of the second half. Small ponds sit short of the green, a bunker guards the right of the landing area, and two more sit behind the green.",
+        "th": "บ่อน้ำอยู่ซ้ายของแท่นที และทะเลสาบเลียบฝั่งขวาช่วงครึ่งหลังของหลุม มีบ่อน้ำเล็กๆ อยู่หน้ากรีน บังเกอร์คุมด้านขวาของจุดตกลูก และอีกสองหลุมอยู่หลังกรีน"
+      }
+    },
+    {
+      "number": 14,
+      "par": 3,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 238
+        },
+        {
+          "id": "2",
+          "yards": 221
+        },
+        {
+          "id": "3",
+          "yards": 193
+        },
+        {
+          "id": "4",
+          "yards": 181
+        }
+      ],
+      "photos": [
+        "h14-01",
+        "h14-02",
+        "h14-03",
+        "h14-04",
+        "h14-05",
+        "h14-06"
+      ],
+      "diagram": "diagram-14",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole14/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "features": [
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "The longest par 3 on the course at 238 yards from Tee 1. A lake follows the right side of the hole. A bunker sits in the approach, and the green is guarded left, right and front right.",
+        "th": "พาร์ 3 ที่ยาวที่สุดของสนาม 238 หลาจากแท่นที 1 ทะเลสาบเลียบไปตลอดฝั่งขวา มีบังเกอร์อยู่กลางทางก่อนถึงกรีน และกรีนมีบังเกอร์คุมด้านซ้าย ขวา และหน้าขวา"
+      }
+    },
+    {
+      "number": 15,
+      "par": 5,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 503
+        },
+        {
+          "id": "2",
+          "yards": 488
+        },
+        {
+          "id": "3",
+          "yards": 474
+        },
+        {
+          "id": "4",
+          "yards": 461
+        },
+        {
+          "id": "5",
+          "yards": 417
+        }
+      ],
+      "photos": [
+        "h15-01",
+        "h15-02",
+        "h15-03",
+        "h15-04",
+        "h15-05",
+        "h15-06",
+        "h15-07",
+        "h15-08"
+      ],
+      "diagram": "diagram-15",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole15/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "featured": true,
+      "issues": [
+        {
+          "en": "The diagram's file name on the club site indicates a generated image; confirm it matches the current hole.",
+          "th": "ชื่อไฟล์แผนผังบนเว็บไซต์สมาคมบ่งว่าเป็นภาพที่สร้างขึ้น ควรยืนยันว่าตรงกับหลุมจริงในปัจจุบัน"
+        }
+      ],
+      "heritage": {
+        "en": "Queen Rambai Barni planted a teak tree on this fairway, and a stone on the fairway carries her royal initials.",
+        "th": "สมเด็จพระนางเจ้ารำไพพรรณี ทรงปลูกต้นสักเพื่อเป็นสิริมงคล ณ แฟร์เวย์หลุมนี้ และทรงจารึกพระปรมาภิไธยย่อ ร.พ. บนแท่นศิลาที่แฟร์เวย์"
+      },
+      "features": [
+        "creek-left",
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "The tee shot crosses a creek and turns up a long corridor with water along the right. Bunkers are scattered through the second-shot area, and the green sits between bunkers with water close on the right.",
+        "th": "ช็อตแรกตีข้ามลำรางน้ำ แล้วเลี้ยวขึ้นสู่แฟร์เวย์ยาวที่มีน้ำเลียบฝั่งขวา บังเกอร์กระจายอยู่ในช่วงช็อตที่สอง และกรีนตั้งอยู่ระหว่างบังเกอร์ โดยมีน้ำอยู่ชิดทางขวา"
+      }
+    },
+    {
+      "number": 16,
+      "par": 3,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 163
+        },
+        {
+          "id": "2",
+          "yards": 146
+        },
+        {
+          "id": "3",
+          "yards": 135
+        },
+        {
+          "id": "4",
+          "yards": 123
+        }
+      ],
+      "photos": [
+        "h16-01",
+        "h16-02",
+        "h16-03",
+        "h16-04",
+        "h16-05",
+        "h16-06"
+      ],
+      "diagram": "diagram-16",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole16/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "featured": true,
+      "features": [
+        "water-carry",
+        "greenside-bunkers",
+        "penalty-line-drawn"
+      ],
+      "description": {
+        "en": "Four tees sit along the shore of a lake, and every one plays across the water. A large bunker guards the front left of the green, with more to the right and behind.",
+        "th": "แท่นทีทั้งสี่เรียงอยู่ริมทะเลสาบ และทุกแท่นต้องตีข้ามน้ำ บังเกอร์ใหญ่คุมด้านหน้าซ้ายของกรีน และยังมีบังเกอร์ทางขวาและด้านหลัง"
+      }
+    },
+    {
+      "number": 17,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 377
+        },
+        {
+          "id": "2",
+          "yards": 361
+        },
+        {
+          "id": "3",
+          "yards": 345
+        },
+        {
+          "id": "4",
+          "yards": 329
+        },
+        {
+          "id": "5",
+          "yards": 301
+        }
+      ],
+      "photos": [],
+      "diagram": "diagram-17",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole17/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "issues": [
+        {
+          "en": "The hole 17 page shows hole 18 photographs (and one from hole 16), so no photograph is attached to this hole.",
+          "th": "หน้าหลุมที่ 17 แสดงภาพของหลุมที่ 18 (และหลุมที่ 16 หนึ่งภาพ) จึงยังไม่แนบภาพถ่ายกับหลุมนี้"
+        }
+      ],
+      "features": [
+        "water-carry",
+        "dogleg-right",
+        "greenside-bunkers",
+        "penalty-line-drawn"
+      ],
+      "description": {
+        "en": "A par 4 that turns right around a large lake. The tees sit beside the water, and the green is set high on the far side, with bunkers left and right.",
+        "th": "พาร์ 4 ที่เลี้ยวขวาอ้อมทะเลสาบขนาดใหญ่ แท่นทีอยู่ริมน้ำ และกรีนตั้งอยู่อีกฟากหนึ่ง มีบังเกอร์ทั้งซ้ายและขวา"
+      }
+    },
+    {
+      "number": 18,
+      "par": 4,
+      "tees": [
+        {
+          "id": "1",
+          "yards": 416
+        },
+        {
+          "id": "2",
+          "yards": 403
+        },
+        {
+          "id": "3",
+          "yards": 358
+        },
+        {
+          "id": "4",
+          "yards": 302
+        }
+      ],
+      "photos": [
+        "h18-01",
+        "h18-02",
+        "h18-03",
+        "h18-04",
+        "h18-05"
+      ],
+      "diagram": "diagram-18",
+      "sourcePage": "https://www.krungthepkreetha.co.th/hole18/",
+      "production": {
+        "status": "GEOMETRY_DRAFT",
+        "display": "ILLUSTRATIVE_3D"
+      },
+      "issues": [
+        {
+          "en": "The diagram's file name on the club site indicates a generated image; confirm it matches the current hole.",
+          "th": "ชื่อไฟล์แผนผังบนเว็บไซต์สมาคมบ่งว่าเป็นภาพที่สร้างขึ้น ควรยืนยันว่าตรงกับหลุมจริงในปัจจุบัน"
+        }
+      ],
+      "features": [
+        "water-right",
+        "fairway-bunkers",
+        "greenside-bunkers"
+      ],
+      "description": {
+        "en": "The closing hole runs beside a river on the right all the way to the green. Bunkers sit on the left of the fairway and short left of the green.",
+        "th": "หลุมสุดท้ายเลียบลำน้ำทางขวาไปจนถึงกรีน บังเกอร์อยู่ฝั่งซ้ายของแฟร์เวย์ และหน้ากรีนด้านซ้าย"
+      }
+    }
+  ]
+}
