@@ -18,6 +18,27 @@ export function webglAvailable() {
   try { const c = document.createElement("canvas"); return !!(window.WebGL2RenderingContext && c.getContext("webgl2")) || !!c.getContext("webgl"); } catch { return false; }
 }
 
+function gradientTexture(stops, h = 256) {
+  const c = document.createElement("canvas"); c.width = 4; c.height = h;
+  const g = c.getContext("2d"); const gr = g.createLinearGradient(0, 0, 0, h);
+  for (const [o, col] of stops) gr.addColorStop(o, col);
+  g.fillStyle = gr; g.fillRect(0, 0, 4, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function mergeGeometries(list) {
+  const parts = list.map((g) => (g.index ? g.toNonIndexed() : g));
+  const n = parts.reduce((sum, g) => sum + g.attributes.position.count, 0);
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3); let o = 0;
+  for (const g of parts) { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; }
+  const out = new THREE.BufferGeometry(); out.setAttribute("position", new THREE.BufferAttribute(pos, 3)); out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+  return out;
+}
+/** A broadleaf canopy: four overlapping rounded lobes, like the rain trees along Bangkok fairways. */
+function canopyGeometry() {
+  const lobe = (r, x, y, z) => new THREE.IcosahedronGeometry(r, 1).translate(x, y, z);
+  return mergeGeometries([lobe(1, 0, 0, 0), lobe(0.72, 0.62, -0.18, 0.22), lobe(0.74, -0.5, -0.12, -0.38), lobe(0.62, 0.08, 0.48, -0.1), lobe(0.6, -0.2, -0.2, 0.62)]);
+}
+
 export class HoleScene {
   constructor(container, { onLabel, reducedMotion = false, isTouch = false, transparent = false } = {}) {
     this.container = container;
@@ -28,6 +49,8 @@ export class HoleScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.canvas = this.renderer.domElement;
     this.canvas.setAttribute("aria-hidden", "true");
     this.canvas.tabIndex = -1;
@@ -35,7 +58,12 @@ export class HoleScene {
     this.scene = new THREE.Scene();
     // Transparent mode lets the page background show around the model (home page); otherwise a soft table colour.
     if (transparent) this.renderer.setClearColor(0x000000, 0);
-    else { this.scene.background = new THREE.Color("#EEEBDD"); this.scene.fog = new THREE.Fog("#EEEBDD", 700, 1600); }
+    else { this.scene.background = gradientTexture([[0, "#D6E3E8"], [0.55, "#E9ECE4"], [1, "#EEEBDD"]]); this.scene.fog = new THREE.Fog("#EEEBDD", 700, 1600); }
+    // Soft daylight from a sky-to-grass gradient, so greens, sand and water pick up natural tones and sheen.
+    try {
+      const pm = new THREE.PMREMGenerator(this.renderer); const env = gradientTexture([[0, "#CFE0EA"], [0.48, "#F4F2E9"], [0.52, "#B9C49A"], [1, "#6E7F52"]]);
+      env.mapping = THREE.EquirectangularReflectionMapping; this.scene.environment = pm.fromEquirectangular(env).texture; this.scene.environmentIntensity = 0.55; env.dispose(); pm.dispose();
+    } catch {}
     this.camera = new THREE.PerspectiveCamera(38, 1, 1, 5000);
     this.controls = new OrbitControls(this.camera, this.canvas);
     Object.assign(this.controls, { enableDamping: !reducedMotion, dampingFactor: 0.09, screenSpacePanning: false, maxPolarAngle: 1.42, minDistance: 12, rotateSpeed: 0.6, zoomSpeed: 0.9, enableZoom: false });
@@ -43,9 +71,11 @@ export class HoleScene {
     this.controls.addEventListener("change", () => this.request());
     // Once the visitor moves the model it is no longer "the top view"; the Top view button brings it back.
     this.controls.addEventListener("start", () => { this.current = null; this.tween = null; this.container.dispatchEvent(new CustomEvent("scene:moved", { bubbles: true })); });
-    const hemi = new THREE.HemisphereLight("#FBFAF5", "#55663F", 1.5);
-    const sun = new THREE.DirectionalLight("#FFF2DC", 2.1); sun.position.set(-300, 500, 260);
-    this.scene.add(hemi, sun);
+    const hemi = new THREE.HemisphereLight("#FBFAF5", "#55663F", 1.1);
+    const sun = new THREE.DirectionalLight("#FFF2DC", 2.8); sun.position.set(-300, 500, 260);
+    sun.castShadow = true; sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.5; sun.shadow.radius = 3;
+    this.sun = sun;
+    this.scene.add(hemi, sun, sun.target);
     this.layers = {};
     this.labels = [];
     this.onLabel = onLabel;
@@ -131,8 +161,9 @@ export class HoleScene {
     const VW = cw + 1, VH = ch + 1;
     let hgt = new Float32Array(VW * VH);
     for (let vj = 0; vj < VH; vj++) for (let vi = 0; vi < VW; vi++) {
-      let s = 0; for (const [di, dj] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) s += HEIGHT[CLS[cls(i0 + vi + di, j0 + vj + dj)]] ?? 0;
-      hgt[vj * VW + vi] = s / 4;
+      let s = 0, sand = 0;
+      for (const [di, dj] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) { const c = CLS[cls(i0 + vi + di, j0 + vj + dj)]; s += HEIGHT[c] ?? 0; if (c === "bunker") sand++; }
+      hgt[vj * VW + vi] = s / 4 + (sand && sand < 4 ? 0.38 : 0);
     }
     for (let pass = 0; pass < 2; pass++) {
       const nx = hgt.slice();
@@ -172,21 +203,23 @@ export class HoleScene {
     const mat = new THREE.MeshStandardMaterial({ vertexColors: !texture, roughness: 0.92, metalness: 0, alphaTest: texture ? 0.5 : 0 });
     // When the model is on screen, the shot lines draw themselves from the tee.
     const ready = () => { if (this.data !== data) return; this.startShots(); this.container.dispatchEvent(new CustomEvent("scene:ready", { bubbles: true })); };
-    const useTex = (tx) => { if (this.data !== data) return; mat.map = tx; mat.emissive = new THREE.Color("#FFFFFF"); mat.emissiveMap = tx; mat.emissiveIntensity = 0.3; mat.needsUpdate = true; this.request(); ready(); };
+    const useTex = (tx) => { if (this.data !== data) return; mat.map = tx; mat.emissive = new THREE.Color("#FFFFFF"); mat.emissiveMap = tx; mat.emissiveIntensity = 0.12; mat.needsUpdate = true; this.request(); ready(); };
     const noTex = () => { if (this.data !== data) return; this.textured = false; geo.setAttribute("color", new THREE.BufferAttribute(this.colors(), 3)); mat.vertexColors = true; mat.alphaTest = 0; mat.needsUpdate = true; this.request(); ready(); };
     if (texture && typeof texture === "object") queueMicrotask(() => useTex(texture));
     else if (texture) this.texture(texture).then(useTex, noTex);
     else queueMicrotask(ready);
     const terrain = new THREE.Mesh(geo, mat);
-    terrain.userData.hole = true; this.terrain = terrain;
+    terrain.userData.hole = true; terrain.receiveShadow = true; this.terrain = terrain;
     this.scene.add(terrain);
 
     // Table under the model
     const span = Math.max((bx1 - bx0), (by1 - by0)) * m;
     this.span = span;
+    { const sc = this.sun.shadow.camera; const half = span * 0.62; Object.assign(sc, { left: -half, right: half, top: half, bottom: -half, near: 10, far: span * 4 }); sc.updateProjectionMatrix();
+      this.sun.position.set(-span * 0.45, span * 1.1, span * 0.38); this.sun.target.position.set(0, 0, 0); }
     if (!this.transparent) {
       const base = new THREE.Mesh(new THREE.CircleGeometry(span * 0.95, 64), new THREE.MeshStandardMaterial({ color: "#E2DECB", roughness: 1 }));
-      base.rotation.x = -Math.PI / 2; base.position.y = -2.7; base.userData.hole = true; this.scene.add(base);
+      base.rotation.x = -Math.PI / 2; base.position.y = -2.7; base.receiveShadow = true; base.userData.hole = true; this.scene.add(base);
     }
 
     // Water surface
@@ -199,7 +232,7 @@ export class HoleScene {
     }
     if (wpos.length) {
       const wg = new THREE.BufferGeometry(); wg.setAttribute("position", new THREE.Float32BufferAttribute(wpos, 3)); wg.computeVertexNormals();
-      const water = new THREE.Mesh(wg, new THREE.MeshStandardMaterial({ color: "#4A7C8E", roughness: 0.12, metalness: 0.05, transparent: true, opacity: texture ? 0.32 : 0.9 }));
+      const water = new THREE.Mesh(wg, new THREE.MeshPhysicalMaterial({ color: "#3F6E80", roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.4, transparent: true, opacity: texture ? 0.42 : 0.9 }));
       water.userData.hole = true; this.layers.water = water; this.scene.add(water);
     }
 
@@ -208,18 +241,23 @@ export class HoleScene {
     for (let j = 0; j < GH; j += 3) for (let i = 0; i < GW; i += 3) if (CLS[cls(i, j)] === "trees") treeCells.push([i, j]);
     const maxTrees = Math.min(treeCells.length, matchMedia("(max-width: 760px)").matches ? 700 : 1400);
     if (maxTrees) {
-      const canopy = new THREE.IcosahedronGeometry(1, 1);
-      const trees = new THREE.InstancedMesh(canopy, new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true }), maxTrees);
-      const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color();
+      const canopies = new THREE.InstancedMesh(canopyGeometry(), new THREE.MeshStandardMaterial({ roughness: 0.85 }), maxTrees);
+      const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.09, 0.15, 1, 7).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: "#5B4A3A", roughness: 0.95 }), maxTrees);
+      canopies.castShadow = true; trunks.castShadow = true;
+      const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
+      const greens = ["#3B5A2C", "#4E6E36", "#5A7B3C", "#43622F", "#667F45"];
       const step = treeCells.length / maxTrees;
       for (let k = 0; k < maxTrees; k++) {
         const [i, j] = treeCells[Math.floor(k * step)];
-        const h1 = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453 % 1, h2 = Math.sin(i * 39.34 + j * 11.13) * 9631.17 % 1;
-        const r = (2.6 + Math.abs(h1) * 3.2);
-        const p = this.toWorld(i * cellPx + cellPx * 1.5 + h2 * 4, j * cellPx + cellPx * 1.5 + h1 * 4, r * 0.9 + 1.4);
-        mtx.compose(p, q, new THREE.Vector3(r, r * 0.86, r)); trees.setMatrixAt(k, mtx);
-        col.set(Math.abs(h2) > 0.5 ? "#3F5A2E" : "#55733A"); trees.setColorAt(k, col);
+        const h1 = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453 % 1, h2 = Math.sin(i * 39.34 + j * 11.13) * 9631.17 % 1, h3 = Math.abs(Math.sin(i * 7.13 + j * 3.71) * 1371.3 % 1);
+        const r = 2.4 + Math.abs(h1) * 3.4; const crown = r * (0.72 + h3 * 0.2); const lift = r * 0.75 + 1.6;
+        const base = this.toWorld(i * cellPx + cellPx * 1.5 + h2 * 4, j * cellPx + cellPx * 1.5 + h1 * 4, 0);
+        q.setFromAxisAngle(up, h3 * Math.PI * 2);
+        mtx.compose(base.clone().setY(lift), q, new THREE.Vector3(r, crown, r)); canopies.setMatrixAt(k, mtx);
+        mtx.compose(base, q, new THREE.Vector3(r * 0.9, lift, r * 0.9)); trunks.setMatrixAt(k, mtx);
+        col.set(greens[Math.floor(h3 * greens.length) % greens.length]).offsetHSL(0, 0, (Math.abs(h2) - 0.5) * 0.05); canopies.setColorAt(k, col);
       }
+      const trees = new THREE.Group(); trees.add(trunks, canopies);
       trees.userData.hole = true; this.layers.trees = trees; this.scene.add(trees);
     }
 
@@ -235,18 +273,30 @@ export class HoleScene {
     // Flag at the diagram's green centre (not today's pin position).
     const flag = new THREE.Group(); flag.userData.hole = true;
     const gp = this.toWorld(g.x, g.y, this.heightAt(g.x, g.y));
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), new THREE.MeshStandardMaterial({ color: "#F4F2E9" }));
-    pole.position.copy(gp).add(new THREE.Vector3(0, 1.6, 0));
-    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.9), new THREE.MeshStandardMaterial({ color: "#D9CCB5", side: THREE.DoubleSide }));
-    cloth.position.copy(gp).add(new THREE.Vector3(0.7, 2.75, 0));
-    flag.add(pole, cloth); this.scene.add(flag); this.layers.flag = flag;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 10), new THREE.MeshStandardMaterial({ color: "#F4F2E9", roughness: 0.4 }));
+    pole.position.copy(gp).add(new THREE.Vector3(0, 1.3, 0)); pole.castShadow = true;
+    const clothGeo = new THREE.PlaneGeometry(1.2, 0.75, 8, 1); const cp = clothGeo.attributes.position;
+    for (let v = 0; v < cp.count; v++) cp.setZ(v, Math.sin((cp.getX(v) + 0.6) * 3.2) * 0.08 * (cp.getX(v) + 0.6));
+    clothGeo.computeVertexNormals();
+    const cloth = new THREE.Mesh(clothGeo, new THREE.MeshStandardMaterial({ color: "#1C3F94", roughness: 0.7, side: THREE.DoubleSide }));
+    cloth.position.copy(gp).add(new THREE.Vector3(0.62, 2.22, 0)); cloth.castShadow = true;
+    const cup = new THREE.Mesh(new THREE.CircleGeometry(0.16, 20), new THREE.MeshBasicMaterial({ color: "#10201B" }));
+    cup.rotation.x = -Math.PI / 2; cup.position.copy(gp).add(new THREE.Vector3(0, 0.03, 0));
+    flag.add(pole, cloth, cup); this.scene.add(flag); this.layers.flag = flag;
 
     // Tee markers
     const teeGroup = new THREE.Group(); teeGroup.userData.hole = true;
+    const aim = data.line.length ? { x: data.line[0][0], y: data.line[0][1] } : { x: g.x, y: g.y };
+    const padMat = new THREE.MeshStandardMaterial({ color: "#8DB565", roughness: 0.9 });
+    const markMat = new THREE.MeshStandardMaterial({ color: "#152A24", roughness: 0.5 });
     for (const t of data.tees) {
-      const p = this.toWorld(t.x, t.y, this.heightAt(t.x, t.y) + 0.35);
-      const mk = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.25, 20), new THREE.MeshStandardMaterial({ color: "#152A24" }));
-      mk.position.copy(p); teeGroup.add(mk); t._world = p;
+      const ground = this.heightAt(t.x, t.y);
+      const ang = Math.atan2(aim.x - t.x, aim.y - t.y);
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.4, 7.5), padMat);
+      pad.position.copy(this.toWorld(t.x, t.y, ground + 0.2)); pad.rotation.y = ang; pad.castShadow = true; pad.receiveShadow = true; teeGroup.add(pad);
+      const side = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang)).multiplyScalar(1.6), front = new THREE.Vector3(Math.sin(ang), 0, Math.cos(ang)).multiplyScalar(2.6);
+      for (const sgn of [-1, 1]) { const mk = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), markMat); mk.position.copy(pad.position).add(side.clone().multiplyScalar(sgn)).add(front).setY(ground + 0.62); mk.castShadow = true; teeGroup.add(mk); }
+      t._world = this.toWorld(t.x, t.y, ground + 0.45);
     }
     this.scene.add(teeGroup); this.layers.tees = teeGroup;
     this.greenWorld = gp;
