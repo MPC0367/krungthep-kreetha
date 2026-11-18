@@ -70,6 +70,7 @@ function holeViewer(box) {
   const label = (kind, extra) => {
     const el = document.createElement("span");
     el.className = `xp-label xp-${kind}`;
+    if (kind === "arc") { el.textContent = `${extra.approx ? "≈ " : ""}${extra.yards} ${th ? "หลา" : "yd"}`; if (!extra.main) el.classList.add("is-sub"); return el; }
     el.textContent = kind === "green" ? (th ? "กรีน" : "Green") : kind === "tee" ? `${th ? "แท่นที" : "Tee"} ${extra}` : kind === "target" ? (th ? "จุดเล็ง" : "Target") : "";
     return kind === "carry" ? null : el;
   };
@@ -99,9 +100,9 @@ function holeViewer(box) {
     box.classList.add("is-loading");
     try {
       // The hole's data and its picture load together; the current hole stays on screen until both are in.
-      const [d, tx] = await Promise.all([getData(h), s.texture(h.cut).catch(() => null)]);
+      const [d, tx] = await Promise.all([getData(h), s.texture(h.clean || h.cut).catch(() => null)]);
       if (my !== token) return;
-      s.load(d, { tee: "1", enabled: { labels: true, line: true, carry: false }, texture: tx || h.cut });
+      s.load(d, { tee: "1", enabled: { labels: true, line: true, carry: false }, texture: tx || h.clean || h.cut, distances: h.arcs ? { tees: h.tees, approach: h.arcs.approach, approx: h.arcs.approx } : null });
       s.preset("top", { instant: true });
       setTop(true);
       status.textContent = th ? `แบบจำลองหลุม ${h.n} มองจากด้านบน` : `Hole ${h.n} model, seen from above`;
@@ -115,7 +116,7 @@ function holeViewer(box) {
     if (prefetching || !scene) return; prefetching = true;
     const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 200)));
     const list = data.filter((x) => x.model && x.n !== from).sort((a, b) => Math.abs(a.n - from) - Math.abs(b.n - from));
-    for (const x of list) { await idle(); try { await Promise.all([getData(x), scene.texture(x.cut)]); } catch {} }
+    for (const x of list) { await idle(); try { await Promise.all([getData(x), scene.texture(x.clean || x.cut)]); } catch {} }
   }
   function setMode(m) {
     mode = m === "3d" && !failed && cur?.model ? "3d" : "2d";

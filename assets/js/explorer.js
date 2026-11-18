@@ -54,6 +54,7 @@ function renderPanel(h) {
 function labelFactory(kind, extra) {
   const el = document.createElement("span");
   el.className = `xp-label xp-${kind}`;
+  if (kind === "arc") { el.textContent = `${extra.approx ? "≈ " : ""}${extra.yards} ${th ? "หลา" : "yd"}`; if (!extra.main) el.classList.add("is-sub"); return el; }
   el.textContent = kind === "green" ? (th ? "กลางกรีนตามแผนผัง" : "Green centre (diagram)") : kind === "tee" ? `${th ? "แท่นที" : "Tee"} ${extra}` : kind === "target" ? (th ? "จุดเล็งตามแผนผัง" : "Diagram target") : (th ? "ระยะตีลอย (ประกอบ)" : "Carry (illustrative)");
   if (kind === "carry") el.dataset.carry = "";
   return el;
@@ -93,9 +94,9 @@ async function show3D(h, my) {
   say(th ? `กำลังโหลดแบบจำลองหลุม ${h.n}` : `Loading the hole ${h.n} model`);
   try {
     // Data and picture load together; the current model stays on screen until both are in.
-    const [data, tx] = await Promise.all([holeJSON(h.n), h.cut ? s.texture(h.cut).catch(() => null) : null]);
+    const [data, tx] = await Promise.all([holeJSON(h.n), h.clean ? s.texture(h.clean).catch(() => null) : null]);
     if (my !== token) return; // a newer selection won
-    s.load(data, { tee: state.tee, carryYards: state.carry, enabled: state.layers, texture: tx || h.cut });
+    s.load(data, { tee: state.tee, carryYards: state.carry, enabled: state.layers, texture: tx || h.clean || h.cut, distances: h.arcs ? { tees: h.tees, approach: h.arcs.approach, approx: h.arcs.approx } : null });
     prefetchNear(h.n);
     s.preset(state.view, { instant: true });
     say(th ? `แบบจำลองหลุม ${h.n} พร้อมแล้ว` : `Hole ${h.n} model ready`);
@@ -113,7 +114,7 @@ function holeJSON(n) {
 // The previous and next holes are fetched quietly so the arrows switch at once.
 function prefetchNear(n) {
   const idle = window.requestIdleCallback || ((f) => setTimeout(f, 300));
-  idle(() => { for (const k of [n === 18 ? 1 : n + 1, n === 1 ? 18 : n - 1]) { const x = holeData(k); if (x && (x.display === "ILLUSTRATIVE_3D" || x.display === "VERIFIED_3D")) { holeJSON(k).catch(() => {}); if (x.cut && scene) scene.texture(x.cut).catch(() => {}); } } });
+  idle(() => { for (const k of [n === 18 ? 1 : n + 1, n === 1 ? 18 : n - 1]) { const x = holeData(k); if (x && (x.display === "ILLUSTRATIVE_3D" || x.display === "VERIFIED_3D")) { holeJSON(k).catch(() => {}); if (x.clean && scene) scene.texture(x.clean).catch(() => {}); } } });
 }
 
 // ---------- 2D diagram with pan and zoom ----------

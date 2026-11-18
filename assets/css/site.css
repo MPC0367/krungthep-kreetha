@@ -153,8 +153,8 @@ p + p { margin-top: .9em; }
 .tag.outline { background: transparent; border: 1px solid var(--rule-strong); }
 
 /* Header */
-.site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; height: var(--header-h); background: var(--ivory); border-bottom: 1px solid var(--rule); transition: background var(--t-small), border-color var(--t-small), color var(--t-small); }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--ivory); }
+.site-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; height: var(--header-h); background: rgba(255, 255, 255, .1); -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15); border-bottom: 1px solid var(--rule); transition: background var(--t-small), border-color var(--t-small), color var(--t-small); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: rgba(255, 255, 255, .1); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
 .site-header .wrap { height: 100%; display: flex; align-items: center; gap: 20px; }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; }
 .brand { color: var(--club-blue); } .brand .mark { height: 44px; width: auto; flex: none; } .brand .word { height: 30px; flex: none; display: grid; }
@@ -180,7 +180,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .menu-btn span::before { position: absolute; top: -6px; } .menu-btn span::after { position: absolute; top: 6px; }
 .progress-line { position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); background: var(--evergreen); }
 /* Over the hero the header is transparent with ivory type until the page scrolls. */
-.has-hero .site-header:not(.is-solid) { background: transparent; border-color: transparent; color: var(--on-dark); }
+.has-hero .site-header:not(.is-solid) { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .18); color: var(--on-dark); }
 .has-hero .site-header:not(.is-solid) .lang-switch, .has-hero .site-header:not(.is-solid) .menu-btn { border-color: rgba(244, 242, 233, .5); }
 .has-hero .site-header:not(.is-solid) .lang-switch a[aria-current="true"] { background: var(--ivory); color: var(--ink); }
 .has-hero .site-header:not(.is-solid) .nav a:hover { background: rgba(244, 242, 233, .14); }
@@ -724,3 +724,8 @@ table.data a:hover { text-decoration: underline; }
 .lang-pop-list a[aria-current="true"] { background: var(--ink); color: var(--on-dark); }
 .has-hero .site-header:not(.is-solid) .lang-pop summary { border-color: rgba(244, 242, 233, .5); }
 @media (max-width: 760px) { .lang-switch { display: none; } .lang-pop { display: block; } }
+
+/* Distance chips on the 3D shot arcs (the numbers the club prints on its drawn lines). */
+.hv .xp-label.xp-arc { background: rgba(255, 255, 255, .94); color: var(--ink); border-color: rgba(21, 42, 36, .18); font: 600 .74rem/1.1 var(--font-mono); letter-spacing: .02em; padding: 2px 6px; }
+.hv .xp-label.xp-arc.is-sub { opacity: .8; font-weight: 500; font-size: .68rem; }
+:lang(th) .hv .xp-label.xp-arc { font-family: var(--font-body); letter-spacing: 0; }

@@ -140,8 +140,9 @@ export class HoleScene {
   }
 
   /** Build the hole. `data` is public/data/holes/hole-NN.json. */
-  load(data, { tee = "1", carryYards = 220, enabled = {}, texture = null } = {}) {
+  load(data, { tee = "1", carryYards = 220, enabled = {}, texture = null, distances = null } = {}) {
     this.textured = !!texture;
+    this.distances = distances; // { tees: [{id, yards}], approach: [yards...], approx }
     this.clearHole();
     this.data = data;
     const { w: GW, h: GH, cellPx } = data.grid;
@@ -239,24 +240,42 @@ export class HoleScene {
     // Trees: instanced canopies on traced tree cells (sampled, deterministic jitter).
     const treeCells = [];
     for (let j = 0; j < GH; j += 3) for (let i = 0; i < GW; i += 3) if (CLS[cls(i, j)] === "trees") treeCells.push([i, j]);
-    const maxTrees = Math.min(treeCells.length, matchMedia("(max-width: 760px)").matches ? 700 : 1400);
+    const cap = Math.min(treeCells.length, matchMedia("(max-width: 760px)").matches ? 700 : 1400);
+    // Points along every shot arc (each tee to the landing zone, then the approach), so trees in a shot's
+    // path can be left out: the shots fly clear from the tee boxes, as the club's drawing shows them.
+    const W0 = (p) => this.toWorld(p.x, p.y, this.heightAt(p.x, p.y) + 0.4);
+    const route = [...data.line.map(([x, y]) => ({ x, y })), { x: g.x, y: g.y }].map(W0);
+    const pairs = [...data.tees.map((tt) => [W0(tt), route[0]]), ...route.slice(1).map((b, i) => [route[i], b])];
+    const arcPts = pairs.flatMap(([a, b]) => { const apex = THREE.MathUtils.clamp(a.distanceTo(b) * 0.1, 3, 28); return Array.from({ length: 81 }, (_, k) => { const u = k / 80; return new THREE.Vector3().lerpVectors(a, b, u).setY(a.y + (b.y - a.y) * u + apex * 4 * u * (1 - u)); }); });
+    const touches = (base, r, crown, lift) => arcPts.some((p) => {
+      const dh = Math.hypot(p.x - base.x, p.z - base.z);
+      if (dh > r * 1.4 + 1) return false;
+      const dy = p.y - lift;
+      return (dh / (r * 1.4)) ** 2 + (dy / (crown * 1.25)) ** 2 < 1 || (p.y < lift && dh < r * 0.2 + 0.8); // canopy or trunk
+    });
+    const keep = [];
+    const stepAll = treeCells.length / Math.max(cap, 1);
+    for (let k = 0; k < cap; k++) {
+      const [i, j] = treeCells[Math.floor(k * stepAll)];
+      const h1 = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453 % 1, h2 = Math.sin(i * 39.34 + j * 11.13) * 9631.17 % 1, h3 = Math.abs(Math.sin(i * 7.13 + j * 3.71) * 1371.3 % 1);
+      const r = 2.4 + Math.abs(h1) * 3.4; const crown = r * (0.72 + h3 * 0.2); const lift = r * 0.75 + 1.6;
+      const base = this.toWorld(i * cellPx + cellPx * 1.5 + h2 * 4, j * cellPx + cellPx * 1.5 + h1 * 4, 0);
+      if (!touches(base, r, crown, lift)) keep.push({ base, r, crown, lift, h2, h3 });
+    }
+    this.treesRemoved = cap - keep.length;
+    const maxTrees = keep.length;
     if (maxTrees) {
       const canopies = new THREE.InstancedMesh(canopyGeometry(), new THREE.MeshStandardMaterial({ roughness: 0.85 }), maxTrees);
       const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.09, 0.15, 1, 7).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: "#5B4A3A", roughness: 0.95 }), maxTrees);
       canopies.castShadow = true; trunks.castShadow = true;
       const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color(), up = new THREE.Vector3(0, 1, 0);
       const greens = ["#3B5A2C", "#4E6E36", "#5A7B3C", "#43622F", "#667F45"];
-      const step = treeCells.length / maxTrees;
-      for (let k = 0; k < maxTrees; k++) {
-        const [i, j] = treeCells[Math.floor(k * step)];
-        const h1 = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453 % 1, h2 = Math.sin(i * 39.34 + j * 11.13) * 9631.17 % 1, h3 = Math.abs(Math.sin(i * 7.13 + j * 3.71) * 1371.3 % 1);
-        const r = 2.4 + Math.abs(h1) * 3.4; const crown = r * (0.72 + h3 * 0.2); const lift = r * 0.75 + 1.6;
-        const base = this.toWorld(i * cellPx + cellPx * 1.5 + h2 * 4, j * cellPx + cellPx * 1.5 + h1 * 4, 0);
+      keep.forEach(({ base, r, crown, lift, h2, h3 }, k) => {
         q.setFromAxisAngle(up, h3 * Math.PI * 2);
         mtx.compose(base.clone().setY(lift), q, new THREE.Vector3(r, crown, r)); canopies.setMatrixAt(k, mtx);
         mtx.compose(base, q, new THREE.Vector3(r * 0.9, lift, r * 0.9)); trunks.setMatrixAt(k, mtx);
         col.set(greens[Math.floor(h3 * greens.length) % greens.length]).offsetHSL(0, 0, (Math.abs(h2) - 0.5) * 0.05); canopies.setColorAt(k, col);
-      }
+      });
       const trees = new THREE.Group(); trees.add(trunks, canopies);
       trees.userData.hole = true; this.layers.trees = trees; this.scene.add(trees);
     }
@@ -354,7 +373,7 @@ export class HoleScene {
     if (this.layers.carry) this.layers.carry.visible = e.carry;
     if (!this.textured) { this.terrain.geometry.attributes.color.array.set(this.colors()); this.terrain.geometry.attributes.color.needsUpdate = true; }
     // Only the selected tee carries a floating label; the others stay as markers and are listed in the panel.
-    this.labels.forEach((l) => { l.hidden = !e.labels || (l.kind === "tee" && (!e.tees || l.id !== `tee-${this.tee?.id}`)) || (l.kind === "target" && !e.line) || (l.kind === "carry" && !e.carry); });
+    this.labels.forEach((l) => { l.hidden = !e.labels || (l.kind === "tee" && (!e.tees || l.id !== `tee-${this.tee?.id}`)) || (l.kind === "target" && !e.line) || (l.kind === "carry" && !e.carry) || (l.kind === "arc" && (!e.line || l.pending)); });
     this.request();
   }
 
@@ -388,12 +407,18 @@ export class HoleScene {
       group.add(lg.tube); legs.push({ ...lg, start: 0, dur, main });
     }
     const landRing = ringAt(landing); group.add(landRing); legs[0].land = null;
+    // Each arc carries its distance, as the club's diagram prints it on the drawn line.
+    this.labels = this.labels.filter((l) => { if (l.kind === "arc") { l.el.remove(); return false; } return true; });
+    const D = this.distances; const sumApp = D?.approach?.reduce((s, v) => s + v, 0) || 0;
+    const arcLabel = (leg, id, yards, main) => { if (yards == null || !(yards > 0)) return; const at = leg.curve.getPointAt(0.5).add(new THREE.Vector3(0, 1.2, 0)); this.addLabel(id, at, "arc", { yards, main, approx: !!D?.approx }); const l = this.labels[this.labels.length - 1]; if (l?.id === id) { l.leg = leg; l.pending = true; } };
+    if (D) d.tees.forEach((tt, i) => { const y = D.tees?.find((x) => x.id === tt.id)?.yards; arcLabel(legs[i], `arc-tee-${tt.id}`, y != null ? y - sumApp : null, tt.id === t.id); });
     let at = teeDur + 180;
     for (let i = 2; i < pts.length; i++) {
       const lg = arc(pts[i - 1], pts[i], radius, mat(0.97)); const dur = 650 + lg.dist * 2.2;
       group.add(lg.tube); legs.push({ ...lg, start: at, dur, main: true }); at += dur + 120;
     }
     const greenRing = pts.length > 2 ? ringAt(pts[pts.length - 1]) : null; if (greenRing) group.add(greenRing);
+    if (D?.approach?.length) legs.slice(d.tees.length).forEach((leg, i) => arcLabel(leg, `arc-app-${i}`, D.approach[i], true));
     const ball = new THREE.Mesh(new THREE.SphereGeometry(radius * 2.6, 16, 12), new THREE.MeshBasicMaterial({ color: "#FFFFFF" })); ball.visible = false; group.add(ball);
     this.layers.line = group; this.scene.add(group);
     this.shotLegs = legs; this.shotBall = ball; this.shotRings = { landing: landRing, landAt: teeDur, green: greenRing, greenAt: at - 120 };
@@ -420,8 +445,11 @@ export class HoleScene {
     for (const l of legs) {
       const f = THREE.MathUtils.clamp((T - l.start) / l.dur, 0, 1);
       l.tube.geometry.setDrawRange(0, Math.floor((l.total / 6) * f) * 6);
+      l.f = f;
       if (l.main && f > 0 && f < 1) head = l.curve.getPointAt(f);
     }
+    const e = this.enabled || {};
+    for (const lb of this.labels) if (lb.kind === "arc") { lb.pending = !(lb.leg?.f >= 0.5); lb.hidden = !e.labels || !e.line || lb.pending; }
     const r = this.shotRings;
     if (r) { r.landing.visible = T >= r.landAt; if (r.green) r.green.visible = T >= r.greenAt; }
     if (this.shotBall) { this.shotBall.visible = !!head; if (head) this.shotBall.position.copy(head); }
