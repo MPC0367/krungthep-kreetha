@@ -65,11 +65,22 @@ if (matchMedia("(pointer: fine)").matches && !reduce.matches) {
   if (fields.length) addEventListener("pointermove", (e) => { tx = (e.clientX / innerWidth - 0.5) * 2; ty = (e.clientY / innerHeight - 0.5) * 2; if (!raf) raf = requestAnimationFrame(step); }, { passive: true });
 }
 
-// Language switch keeps the page and its safe state (no personal data travels in the URL).
+// Language switch keeps the page and its safe state (no personal data travels in the URL), and focus
+// returns to the language control on the new page.
 document.querySelectorAll("[data-lang-link]").forEach((a) => a.addEventListener("click", () => {
+  try { sessionStorage.setItem("kk.langFocus", "1"); } catch {}
   try { const s = window.kk.carry?.(); if (s) sessionStorage.setItem("kk.carry", JSON.stringify({ ...s, page: html.dataset.page, at: Date.now() })); } catch {}
   if (location.hash) a.href = a.href.split("#")[0] + location.hash;
 }));
+try {
+  if (sessionStorage.getItem("kk.langFocus")) {
+    sessionStorage.removeItem("kk.langFocus");
+    const el = [...document.querySelectorAll(".lang-switch [aria-current=\"true\"], [data-lang-pop] summary")].find((x) => x.offsetParent);
+    el?.focus({ preventScroll: true });
+  }
+} catch {}
+// The language list closes with Escape and gives focus back to its button.
+document.querySelectorAll("[data-lang-pop]").forEach((d) => d.addEventListener("keydown", (e) => { if (e.key === "Escape" && d.open) { d.open = false; d.querySelector("summary").focus(); } }));
 window.kk.takeCarry = () => {
   try { const s = JSON.parse(sessionStorage.getItem("kk.carry") || "null"); sessionStorage.removeItem("kk.carry"); return s && s.page === html.dataset.page && Date.now() - s.at < 60e3 ? s : null; } catch { return null; }
 };
@@ -81,19 +92,33 @@ window.kk.toast = (msg) => {
   setTimeout(() => t.remove(), 4200);
 };
 
+// Scorecard: a link such as #h7 (from a hole page) brings that hole's column into view and marks it.
+function scorecardTarget() {
+  document.querySelectorAll(".sc .is-target").forEach((c) => c.classList.remove("is-target"));
+  const m = /^#h(\d{1,2})$/.exec(location.hash); if (!m) return;
+  const head = document.getElementById(`h${m[1]}`); const table = head?.closest("table.sc"); if (!table) return;
+  const col = [...head.parentElement.children].indexOf(head);
+  table.querySelectorAll("tr").forEach((tr) => tr.children[col]?.classList.add("is-target"));
+  const wrap = table.closest(".sc-wrap");
+  head.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+  if (wrap) wrap.scrollLeft = Math.max(0, head.offsetLeft - wrap.clientWidth / 2 + head.offsetWidth / 2);
+}
+if (document.querySelector("table.sc")) { scorecardTarget(); addEventListener("hashchange", scorecardTarget); }
+
 // Gallery lightbox: keyboard, Escape, focus return, swipe.
 function lightbox() {
-  const groups = document.querySelectorAll("[data-gallery]");
-  if (!groups.length) return;
+  if (!document.querySelector("[data-gallery]") && !document.querySelector("[data-explorer]")) return;
   const lb = document.createElement("div");
   lb.className = "lightbox"; lb.hidden = true; lb.setAttribute("role", "dialog"); lb.setAttribute("aria-modal", "true"); lb.setAttribute("aria-label", th ? "ภาพขยาย" : "Photo viewer");
   lb.innerHTML = `<div class="lb-top"><span class="num" data-count></span><button class="icon-btn" type="button" data-x aria-label="${th ? "ปิด" : "Close"}">&times;</button></div><figure><img alt=""><figcaption></figcaption></figure><div class="lb-nav"><button class="icon-btn" type="button" data-prev aria-label="${th ? "ภาพก่อนหน้า" : "Previous photo"}">&larr;</button><button class="icon-btn" type="button" data-next aria-label="${th ? "ภาพถัดไป" : "Next photo"}">&rarr;</button></div>`;
   document.body.append(lb);
   let items = [], i = 0, opener = null;
-  const show = () => { const b = items[i]; const im = b.querySelector("img"); lb.querySelector("img").src = b.dataset.full || im.currentSrc || im.src; lb.querySelector("img").alt = im.alt; lb.querySelector("figcaption").textContent = im.alt; lb.querySelector("[data-count]").textContent = `${i + 1} / ${items.length}`; };
+  // A button with a visible caption names the photo once (the picture inside it has empty alt text).
+  const show = () => { const b = items[i]; const im = b.querySelector("img"); const text = b.querySelector(".cap")?.textContent || im.alt; lb.querySelector("img").src = b.dataset.full || im.currentSrc || im.src; lb.querySelector("img").alt = text; lb.querySelector("figcaption").textContent = text; lb.querySelector("[data-count]").textContent = `${i + 1} / ${items.length}`; };
   const close = () => { lb.hidden = true; document.body.style.overflow = ""; opener?.focus(); };
   // Auto-scrolling strips draw each image twice; the copies ([data-dup]) open their original.
-  groups.forEach((g) => g.addEventListener("click", (e) => { let b = e.target.closest("button"); if (!b) return; items = [...g.querySelectorAll("button:not([data-dup])")]; if (b.hasAttribute("data-dup")) b = items[Number(b.dataset.dup)] || b; i = Math.max(0, items.indexOf(b)); opener = b; show(); lb.hidden = false; document.body.style.overflow = "hidden"; lb.querySelector("[data-x]").focus(); }));
+  // Delegated, so galleries a script fills in later (a hole change, the Photos view) open too.
+  document.addEventListener("click", (e) => { const g = e.target.closest("[data-gallery]"); if (!g) return; let b = e.target.closest("button"); if (!b || !g.contains(b)) return; items = [...g.querySelectorAll("button:not([data-dup])")]; if (b.hasAttribute("data-dup")) b = items[Number(b.dataset.dup)] || b; i = Math.max(0, items.indexOf(b)); opener = b; show(); lb.hidden = false; document.body.style.overflow = "hidden"; lb.querySelector("[data-x]").focus(); });
   lb.querySelector("[data-x]").onclick = close;
   lb.querySelector("[data-prev]").onclick = () => { i = (i - 1 + items.length) % items.length; show(); };
   lb.querySelector("[data-next]").onclick = () => { i = (i + 1) % items.length; show(); };

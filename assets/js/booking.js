@@ -33,7 +33,7 @@ async function details() {
   if (hold.hold.status !== "ACTIVE") { if (f.bookingId && f.token) location.replace(link("booking/payment/")); return missing(); }
   const cfg = await api.getPublicConfig();
   setSummary(`${summaryHTML({ ...hold.hold, quote: hold.quote, policy: cfg.policy })}<div data-cd></div>`);
-  countdown(document.querySelector("[data-cd]"), { expiresAt: hold.hold.expiresAt, serverTime: hold.hold.serverTime, onEnd: () => { window.kk.toast?.(th ? "การกันเวลาหมดอายุ" : "Your hold ended"); setTimeout(() => location.assign(link("tee-times/")), 2500); } });
+  countdown(document.querySelector("[data-cd]"), { expiresAt: hold.hold.expiresAt, serverTime: hold.hold.serverTime, onLow: () => window.kk.toast?.(th ? "เหลือเวลากันที่อีก 2 นาที" : "Two minutes left on your hold"), onEnd: () => { window.kk.toast?.(th ? "การกันเวลาหมดอายุ" : "Your hold ended"); setTimeout(() => location.assign(link("tee-times/")), 2500); } });
   const form = document.querySelector("[data-details-form]");
   try { const d = JSON.parse(sessionStorage.getItem("kk.details") || "{}"); for (const [k, v] of Object.entries(d)) { const el = form.elements[k]; if (el && el.type !== "checkbox") el.value = v; } } catch {}
   form.addEventListener("input", () => { try { sessionStorage.setItem("kk.details", JSON.stringify({ name: form.name.value, phone: form.phone.value, email: form.email.value })); } catch {} });
@@ -80,7 +80,7 @@ async function payment() {
     // Live updates and the sandbox result can both report the confirmation; navigate only once.
     if (b.status === "CONFIRMED") { if (!leaving) { leaving = true; location.assign(link("booking/confirmation/")); } return; }
     const cfg = await api.getPublicConfig();
-    setSummary(`${summaryHTML({ ...b, quote: b.quote, policy: b.policy || cfg.policy })}<div data-cd></div><p class="small">${th ? "สถานะ" : "Status"}: <b>${STATUS[b.status]}</b></p>`);
+    setSummary(`${summaryHTML({ ...b, quote: b.quote, policy: b.policy || cfg.policy })}<div data-cd></div><p class="small"><span>${th ? "สถานะ:" : "Status:"}</span> <b>${STATUS[b.status]}</b></p>`);
     if (b.status === "EXPIRED") {
       document.querySelector("[data-pay-panel]").innerHTML = `<div class="notice bad"><span>${th ? "การกันเวลาหมดอายุก่อนได้รับการชำระเงิน หากคุณชำระเงินไปแล้ว ระบบจะคืนเงินอัตโนมัติหรือยืนยันให้ถ้ายังมีที่ว่าง เจ้าหน้าที่จะตรวจสอบรายการนี้" : "The hold ended before payment arrived. If you did pay, the system confirms the booking when places are still free, or refunds you automatically; staff review it either way."}</span></div><a class="btn" href="${link("tee-times/")}">${th ? "เลือกเวลาใหม่" : "Choose a time again"}</a>`;
       document.querySelector("[data-sandbox]").hidden = true; return;
@@ -99,18 +99,19 @@ async function payment() {
     document.querySelector("[data-sandbox]").dataset.payment = p.id;
   };
   document.querySelector("[data-start-pay]").addEventListener("click", async (e) => {
-    const btn = e.currentTarget; btn.classList.add("is-loading");
+    const btn = e.currentTarget; if (btn.disabled) return; btn.disabled = true; btn.classList.add("is-loading");
     const method = document.querySelector('[name="method"]:checked').value;
     try {
       const r = await api.startPayment({ bookingId: f.bookingId, clientId: cid, method, idemKey: `${f.bookingId}:${method}:${Date.now() >> 15}` });
       if (r.alreadyConfirmed) return location.assign(link("booking/confirmation/"));
       showPending(r.payment);
     } catch (err) { window.kk.toast?.(errorText(err)); if (err.code === "HOLD_EXPIRED") refresh(); }
-    finally { btn.classList.remove("is-loading"); }
+    finally { btn.disabled = false; btn.classList.remove("is-loading"); }
   });
   const log = document.querySelector("[data-sandbox-log]");
   document.querySelector("[data-sandbox]").addEventListener("click", async (e) => {
-    const b = e.target.closest("[data-act]"); if (!b) return;
+    const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+    const acts = [...document.querySelectorAll("[data-sandbox] [data-act]")]; acts.forEach((x) => (x.disabled = true));
     const pid = document.querySelector("[data-sandbox]").dataset.payment; if (!pid) return;
     const act = b.dataset.act;
     try {
@@ -124,6 +125,7 @@ async function payment() {
       else log.textContent = `${th ? "ผลจากผู้ให้บริการ" : "Provider result"}: ${r.result || (r.duplicate ? "duplicate" : "")}`;
       await refresh();
     } catch (err) { log.textContent = errorText(err); }
+    finally { acts.forEach((x) => (x.disabled = false)); }
   });
   api.subscribe("booking", refresh);
   await refresh();
@@ -152,7 +154,7 @@ async function confirmation() {
     if (b.status !== "CONFIRMED") { body.innerHTML = `<div class="notice warn"><span>${th ? "สถานะการจอง" : "Booking status"}: <b>${STATUS[b.status]}</b>. <a href="${link("booking/manage/")}">${th ? "ดูรายละเอียด" : "See details"}</a></span></div>`; return; }
     const p = b.payment;
     body.innerHTML = `
-      <div class="confirm-hero"><p class="eyebrow" style="color:var(--on-dark-2)">${th ? "ยืนยันการจองแล้ว (ตัวอย่าง)" : "Booking confirmed (demo)"}</p><h2 class="h1">${day(b.date)}<br>${time(b.time)}</h2><p class="muted">${teeName(b.tee)}, ${th ? `${b.partySize} ท่าน` : `${b.partySize} golfers`}, ${CAT[b.category][lang]}</p><p><span class="small muted">${th ? "หมายเลขการจอง" : "Booking reference"}</span><br><span class="ref">${b.ref}</span></p></div>
+      <div class="confirm-hero"><p class="eyebrow" style="color:var(--on-dark-2)">${th ? "ยืนยันการจองแล้ว (ตัวอย่าง)" : "Booking confirmed (demo)"}</p><h2 class="h1">${day(b.date)}<br>${time(b.time)}</h2><p class="muted"><span>${teeName(b.tee)}</span><br><span>${th ? `${b.partySize} ท่าน` : `${b.partySize} golfers`}, ${CAT[b.category][lang]}</span></p><p><span class="small muted">${th ? "หมายเลขการจอง" : "Booking reference"}</span><br><span class="ref">${b.ref}</span></p></div>
       <div class="split-2">
         <div class="panel"><h2 class="label">${th ? "การชำระเงิน" : "Payment"}</h2><div class="money">
           ${b.exemption ? `<div><span>${th ? "ไม่ต้องมัดจำ" : "No deposit"}</span><span>${b.exemption === "member_account" ? (th ? "บัญชีสมาชิก" : "Member account") : (th ? "ชำระที่สนาม" : "Pay at the club")}</span></div>` : `
@@ -181,7 +183,7 @@ async function manage() {
     const b = st.booking; current = { ref: b.ref, token: form.token.value.trim() };
     const c = st.cancellation;
     out.innerHTML = `<div class="panel"><div class="row" style="justify-content:space-between"><span class="ref">${b.ref}</span><span class="tag ${b.status === "CONFIRMED" ? "ok" : b.status === "CANCELLED" ? "bad" : "warn"}">${STATUS[b.status]}</span></div>
-      <p><b>${day(b.date)}, ${time(b.time)}</b><br>${teeName(b.tee)}, ${th ? `${b.partySize} ท่าน` : `${b.partySize} golfers`}</p>
+      <p><b>${day(b.date)}, ${time(b.time)}</b><br><span>${teeName(b.tee)}</span><br><span>${th ? `${b.partySize} ท่าน` : `${b.partySize} golfers`}</span></p>
       ${b.payment ? `<p class="small">${th ? "การชำระเงิน" : "Payment"}: ${PAY[b.payment.status] || b.payment.status}, ${money(b.payment.capturedMinor)}${b.payment.retainedMinor ? `, ${th ? "สมาคมเก็บไว้" : "kept by the club"} ${money(b.payment.retainedMinor)}` : ""}</p>` : ""}
       ${b.refunds?.length ? `<p class="small">${th ? "การคืนเงิน" : "Refunds"}: ${b.refunds.map((r) => `${money(r.amountMinor)} (${r.status === "COMPLETED" ? (th ? "เสร็จแล้ว" : "completed") : (th ? "ส่งคำขอแล้ว รอผู้ให้บริการยืนยัน" : "submitted, waiting for the provider")})`).join(", ")}</p>` : ""}
       ${b.status === "CONFIRMED" ? `<div class="stack" data-cancel-box><h2 class="label">${th ? "ยกเลิก" : "Cancel"}</h2><p class="small">${c.kind === "refund" ? (th ? `ยกเลิกตอนนี้ได้รับมัดจำคืน ${money(c.refundMinor)} ภายในเงื่อนไข (ก่อน ${formatDateTime(c.deadline, lang)})` : `Cancel now and ${money(c.refundMinor)} is refunded (before ${formatDateTime(c.deadline, lang)}).`) : (th ? `เลยกำหนดยกเลิกฟรีแล้ว (${formatDateTime(c.deadline, lang)}) หากยกเลิก สมาคมเก็บมัดจำ ${money(c.retainedMinor)} ไว้ ไม่เรียกเก็บเพิ่ม` : `The free-cancellation deadline (${formatDateTime(c.deadline, lang)}) has passed. If you cancel, the club keeps the ${money(c.retainedMinor)} deposit and charges nothing more.`)}</p><p class="row"><button class="btn secondary" type="button" data-cancel-confirm>${th ? "ยืนยันการยกเลิก" : "Confirm cancellation"}</button></p></div>

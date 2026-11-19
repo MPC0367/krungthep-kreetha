@@ -34,7 +34,7 @@ function renderDates() {
     b.setAttribute("aria-checked", String(d === state.date)); b.tabIndex = d === state.date ? 0 : -1;
     b.setAttribute("aria-label", day(d) + (closed ? (th ? " ไม่มีเวลาออกรอบออนไลน์" : ", no online tee times") : ""));
     b.innerHTML = `<span class="dow">${i === 0 ? (th ? "วันนี้" : "Today") : day(d, { weekday: "short" })}</span><span class="d num">${Number(d.slice(8))}</span><span class="m">${day(d, { month: "short" })}</span>`;
-    b.addEventListener("click", () => { state.date = d; persist(); datesEl.querySelectorAll(".date-chip").forEach((c) => { c.setAttribute("aria-checked", String(c.dataset.date === d)); c.tabIndex = c.dataset.date === d ? 0 : -1; }); load(); });
+    b.addEventListener("click", () => { state.date = d; persist(); datesEl.querySelectorAll(".date-chip").forEach((c) => { c.setAttribute("aria-checked", String(c.dataset.date === d)); c.tabIndex = c.dataset.date === d ? 0 : -1; }); if (state.hold) renderSummary(); load(); });
     datesEl.append(b);
   }
   datesEl.onkeydown = (e) => {
@@ -63,7 +63,9 @@ function slotHTML(s, sessionPrice) {
   const price = s.quote?.perGolferMinor && s.quote.perGolferMinor !== sessionPrice ? `<span class="slot-price">${money(s.quote.perGolferMinor)}</span>` : "";
   const label = `${time(s.time)}, ${tee}. ${selectable ? placesText(state.data) : reason}${s.quote?.perGolferMinor ? `, ${money(s.quote.perGolferMinor)} ${th ? "ต่อท่าน" : "per golfer"}` : ""}`;
   if (!selectable) return `<div class="slot is-off${s.memberOnly ? " member-only" : ""}" role="listitem" aria-label="${esc(label)}"><span class="time num">${time(s.time)}</span><span class="why">${reason}</span></div>`;
-  return `<div role="listitem"><button type="button" class="slot${s.memberOnly ? " member-only" : ""}" data-slot="${s.id}" aria-pressed="${s.state === "yours" || state.slot?.id === s.id}" data-selected-label="${th ? "เลือกแล้ว" : "Selected"}" aria-label="${esc(label)}"><span class="time num">${time(s.time)}</span><span class="tee-tag">${tag}</span>${capDots(s)}${price}</button></div>`;
+  // Two times can share a clock time (one from each tee), so the starting tee and the places left are written out.
+  const free = s.capacity != null && state.data.capacityModel !== "flight" ? `<span class="free">${th ? `ว่าง ${s.remaining}` : `${s.remaining} free`}</span>` : "";
+  return `<div role="listitem"><button type="button" class="slot${s.memberOnly ? " member-only" : ""}" data-slot="${s.id}" aria-pressed="${s.state === "yours" || state.slot?.id === s.id}" data-selected-label="${th ? "เลือกแล้ว" : "Selected"}" aria-label="${esc(label)}"><span class="time num">${time(s.time)}</span><span class="tee-tag">${tag}</span>${capDots(s)}${free}${price}</button></div>`;
 }
 
 function renderResults() {
@@ -128,8 +130,11 @@ function renderSummary() {
     mobileSum.hidden = true; return;
   }
   const h = state.hold;
-  summary.innerHTML = `${summaryHTML({ ...h, quote: state.quote, policy: cfg.policy })}<div data-cd></div><p class="row"><a class="btn block" href="${link("booking/details/")}">${th ? "ดำเนินการต่อ กรอกข้อมูล" : "Continue to your details"} <span class="arrow" aria-hidden="true">&rarr;</span></a><button class="btn secondary block" type="button" data-release>${th ? "ยกเลิกการเลือก" : "Release this time"}</button></p>`;
-  stopCountdown = countdown(summary.querySelector("[data-cd]"), { expiresAt: h.expiresAt, serverTime: h.serverTime, onEnd: () => { state.hold = null; flow.clear(); window.kk.toast?.(th ? "การกันเวลาหมดอายุ เลือกเวลาใหม่ได้" : "Your hold ended. Choose a time again."); load({ quiet: true }); renderSummary(); } });
+  // The hold keeps its own date, group and golfer type while the visitor browses other filters.
+  const browsing = h.date !== state.date || h.partySize !== state.golfers || h.category !== state.category;
+  const keep = browsing ? `<div class="notice"><span>${th ? "คุณกำลังดูตัวเลือกอื่น เวลาที่กันไว้ด้านบนยังอยู่ จนกว่าจะเลือกเวลาใหม่ได้สำเร็จหรือกดยกเลิก" : "You are looking at other options. The time held above stays yours until a new choice succeeds or you release it."}</span></div>` : "";
+  summary.innerHTML = `<p class="eyebrow small">${th ? "เวลาที่กันไว้ให้คุณ" : "Your held time"}</p>${summaryHTML({ ...h, quote: state.quote, policy: cfg.policy })}<div data-cd></div>${keep}<p class="row"><a class="btn block" href="${link("booking/details/")}">${th ? "ดำเนินการต่อ กรอกข้อมูล" : "Continue to your details"} <span class="arrow" aria-hidden="true">&rarr;</span></a><button class="btn secondary block" type="button" data-release>${th ? "ยกเลิกการเลือก" : "Release this time"}</button></p>`;
+  stopCountdown = countdown(summary.querySelector("[data-cd]"), { expiresAt: h.expiresAt, serverTime: h.serverTime, onLow: () => window.kk.toast?.(th ? "เหลือเวลากันที่อีก 2 นาที" : "Two minutes left on your hold"), onEnd: () => { state.hold = null; flow.clear(); window.kk.toast?.(th ? "การกันเวลาหมดอายุ เลือกเวลาใหม่ได้" : "Your hold ended. Choose a time again."); load({ quiet: true }); renderSummary(); } });
   mobileSum.hidden = false;
   mobileSum.querySelector("[data-ms-text]").textContent = `${time(h.time)}, ${th ? `${h.partySize} ท่าน` : `${h.partySize} golfers`}`;
 }
@@ -157,14 +162,14 @@ async function select(slotId, btn) {
 
 box.addEventListener("click", async (e) => {
   const s = e.target.closest("[data-slot]"); if (s) return select(s.dataset.slot, s);
-  const g = e.target.closest("[data-go]"); if (g) { state.date = g.dataset.go; persist(); renderDates(); return load(); }
+  const g = e.target.closest("[data-go]"); if (g) { state.date = g.dataset.go; persist(); renderDates(); if (state.hold) renderSummary(); return load(); }
   if (e.target.closest("[data-retry]")) return load();
   if (e.target.closest("[data-release]")) { try { await api.releaseHold({ holdId: state.hold.id, clientId: cid }); } catch (err) { window.kk.toast?.(errorText(err)); return; } state.hold = null; flow.clear(); renderSummary(); load({ quiet: true }); }
 });
 box.querySelectorAll("[data-step]").forEach((b) => b.addEventListener("click", () => {
-  state.golfers = Math.min(cfg.maxGroup, Math.max(1, state.golfers + Number(b.dataset.step))); persist(); syncControls(); load();
+  state.golfers = Math.min(cfg.maxGroup, Math.max(1, state.golfers + Number(b.dataset.step))); persist(); syncControls(); if (state.hold) renderSummary(); load();
 }));
-box.querySelector("[data-category]").addEventListener("change", (e) => { state.category = e.target.value; persist(); syncControls(); load(); });
+box.querySelector("[data-category]").addEventListener("change", (e) => { state.category = e.target.value; persist(); syncControls(); if (state.hold) renderSummary(); load(); });
 box.querySelector("[data-band]")?.addEventListener("change", (e) => { state.band = e.target.value; renderResults(); });
 box.querySelector("[data-verify]").addEventListener("click", () => { state.memberNumber = box.querySelector("#member-no").value.trim(); load(); });
 box.querySelector("#member-no").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); box.querySelector("[data-verify]").click(); } });

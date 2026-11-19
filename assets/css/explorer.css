@@ -107,3 +107,19 @@ details.source .kv { margin-top: 10px; }
 .xp-label.xp-arc { background: rgba(255, 255, 255, .94); color: var(--ink); border-color: rgba(21, 42, 36, .18); font: 600 .74rem/1.1 var(--font-mono); letter-spacing: .02em; padding: 2px 6px; }
 .xp-label.xp-arc.is-sub { opacity: .8; font-weight: 500; font-size: .68rem; }
 :lang(th) .xp-label.xp-arc { font-family: var(--font-body); letter-spacing: 0; }
+
+/* 20 Nov 2026 audit: long tags wrap inside the guide; the 2D note about printed yards shows only in metres;
+   the four tee choices sit two by two on phones instead of leaving Red on a row of its own. */
+.tag.wrap { white-space: normal; }
+.xp:not([data-units="m"]) .when-m { display: none; }
+.xp-panel, .xp-panel > * { min-width: 0; }
+.xp-panel .yardages > div > span { min-width: 0; overflow-wrap: anywhere; }
+.xp-panel .yardages b { white-space: nowrap; }
+.xp-panel .kv dd { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .xp-toolbar > .seg { width: 100%; }
+  .xp-toolbar [data-tees] { display: grid; grid-template-columns: 1fr 1fr; border-radius: 16px; }
+  .xp-toolbar [data-tees] button { justify-content: center; min-height: 44px; }
+  .xp-toolbar .seg:first-child { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .xp-toolbar .seg:first-child button { justify-content: center; min-height: 44px; }
+}

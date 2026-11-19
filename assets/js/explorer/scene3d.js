@@ -1,19 +1,15 @@
 // Illustrative 3D hole model built from a traced land-cover raster (scripts/trace-holes.mjs).
 // It renders on demand, pauses when hidden, and disposes every GPU resource when switched.
-// Flat terrain is assumed: the club has not supplied elevation data, so no slopes are invented.
+// The ground is illustrative: classes from the club's diagram, bunkers carved as hollows (terrain.js).
+// The club has published no elevation data, so depths and slopes are approximate.
 import * as THREE from "../vendor/three/three.module.min.js";
 import { OrbitControls } from "../vendor/three/OrbitControls.js";
+import { CLS, decodeRaster, buildTerrain } from "./terrain.js";
+export { decodeRaster };
 
-const CLS = ["out", "rough", "fairway", "green", "tee", "bunker", "water", "trees", "path", "redline", "ink"];
-const HEIGHT = { out: -2.6, rough: 0, fairway: 0.08, green: 0.22, tee: 0.45, bunker: -0.55, water: -0.95, trees: 0.04, path: 0.03, redline: 0, ink: 0 };
 const COLOR = { out: "#E6E2D2", rough: "#6E8B50", fairway: "#93B567", green: "#B9D47C", tee: "#A7C978", bunker: "#E3D5B4", water: "#2F5566", trees: "#4F6B3A", path: "#C9C5B6", redline: "#6E8B50", ink: "#6E8B50" };
 const YD = 0.9144;
 
-export function decodeRaster(rle, n) {
-  const out = new Uint8Array(n); let i = 0;
-  for (const tok of rle.split(".")) { const c = parseInt(tok[0], 16); const k = parseInt(tok.slice(1), 36); out.fill(c, i, i + k); i += k; }
-  return out;
-}
 export function webglAvailable() {
   try { const c = document.createElement("canvas"); return !!(window.WebGL2RenderingContext && c.getContext("webgl2")) || !!c.getContext("webgl"); } catch { return false; }
 }
@@ -24,6 +20,20 @@ function gradientTexture(stops, h = 256) {
   for (const [o, col] of stops) gr.addColorStop(o, col);
   g.fillStyle = gr; g.fillRect(0, 0, 4, h);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+/** A small tiling bump for close-range grain on turf and sand; mipmaps fade it out with distance. */
+function grainTexture(size = 128) {
+  const c = document.createElement("canvas"); c.width = c.height = size; const g = c.getContext("2d"); const img = g.createImageData(size, size);
+  const hf = new Float32Array(size * size); let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let k = 0; k < hf.length; k++) hf[k] = rnd();
+  for (let pass = 0; pass < 2; pass++) { const n = hf.slice(); for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { let s = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s += hf[((y + dy + size) % size) * size + ((x + dx + size) % size)]; n[y * size + x] = s / 9; } hf.set(n); }
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const dx = hf[y * size + ((x + 1) % size)] - hf[y * size + ((x - 1 + size) % size)], dy = hf[((y + 1) % size) * size + x] - hf[((y - 1 + size) % size) * size + x];
+    const nx = -dx * 6, ny = -dy * 6, l = Math.hypot(nx, ny, 1), k = (y * size + x) * 4;
+    img.data[k] = (nx / l * 0.5 + 0.5) * 255; img.data[k + 1] = (ny / l * 0.5 + 0.5) * 255; img.data[k + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[k + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.channel = 1; t.anisotropy = 4; return t;
 }
 function mergeGeometries(list) {
   const parts = list.map((g) => (g.index ? g.toNonIndexed() : g));
@@ -39,11 +49,15 @@ function canopyGeometry() {
   return mergeGeometries([lobe(1, 0, 0, 0), lobe(0.72, 0.62, -0.18, 0.22), lobe(0.74, -0.5, -0.12, -0.38), lobe(0.62, 0.08, 0.48, -0.1), lobe(0.6, -0.2, -0.2, 0.62)]);
 }
 
+// Phones get a lighter mesh (2 x 2 per bunker cell) before any silhouette is simplified.
+const isTouchLow = () => matchMedia("(pointer: coarse)").matches && (navigator.hardwareConcurrency || 4) <= 6;
+
 export class HoleScene {
   constructor(container, { onLabel, reducedMotion = false, isTouch = false, transparent = false } = {}) {
     this.container = container;
     this.transparent = transparent;
     this.reduced = reducedMotion;
+    this.isTouch = isTouch;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: transparent, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -124,6 +138,7 @@ export class HoleScene {
     if (!this.texCache.has(url)) {
       const pr = new Promise((res, rej) => new THREE.TextureLoader().load(url, (tx) => {
         tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = this.renderer.capabilities.getMaxAnisotropy(); tx.generateMipmaps = true; tx.minFilter = THREE.LinearMipmapLinearFilter;
+        if (this.disposed) { tx.dispose(); return rej(new Error("disposed")); }
         try { this.renderer.initTexture(tx); } catch {}
         res(tx);
       }, undefined, rej));
@@ -131,6 +146,13 @@ export class HoleScene {
       this.texCache.set(url, pr);
     }
     return this.texCache.get(url);
+  }
+
+  /** Keep only the given hole textures on the graphics card; others are released (a small cache with eviction). */
+  retain(urls) {
+    if (!this.texCache) return;
+    const keep = new Set(urls.filter(Boolean));
+    for (const [url, pr] of this.texCache) if (!keep.has(url)) { this.texCache.delete(url); pr.then((tx) => { if (this.terrain?.material?.map !== tx) tx.dispose(); }, () => {}); }
   }
 
   clearHole() {
@@ -145,79 +167,45 @@ export class HoleScene {
     this.distances = distances; // { tees: [{id, yards}], approach: [yards...], approx }
     this.clearHole();
     this.data = data;
-    const { w: GW, h: GH, cellPx } = data.grid;
-    const grid = decodeRaster(data.raster, GW * GH);
+    const T = buildTerrain(data, { textured: !!texture, subdiv: isTouchLow() ? 2 : 3 });
+    this.T = T; this.stats = T.stats;
+    const { GW, GH, cellPx, grid, cls } = T;
     this.grid = grid;
-    const m = data.scale.mPerPx; this.m = m;
+    const m = T.m; this.m = m;
     const [bx0, by0, bx1, by1] = data.bbox;
-    const cx = (bx0 + bx1) / 2, cy = (by0 + by1) / 2;
-    this.toWorld = (x, y, h = 0) => new THREE.Vector3((x - cx) * m, h, (y - cy) * m);
-    const i0 = Math.max(0, Math.floor(bx0 / cellPx) - 2), j0 = Math.max(0, Math.floor(by0 / cellPx) - 2);
-    const i1 = Math.min(GW, Math.ceil(bx1 / cellPx) + 2), j1 = Math.min(GH, Math.ceil(by1 / cellPx) + 2);
-    const cw = i1 - i0, ch = j1 - j0;
-    const cls = (i, j) => (i < 0 || j < 0 || i >= GW || j >= GH ? 0 : grid[j * GW + i]);
+    this.toWorld = (x, y, h = 0) => new THREE.Vector3((x - T.cx) * m, h, (y - T.cy) * m);
+    const { i0, j0, cw, ch } = T;
     this.enabled = { fairway: true, green: true, bunker: true, water: true, trees: true, path: true, tees: true, redline: true, line: true, carry: false, labels: true, ...enabled };
+    const g = data.green;
+    this.heightAt = T.heightAt;
 
-    // Vertex heights from the four neighbouring cells, then a light blur for soft edges.
-    const VW = cw + 1, VH = ch + 1;
-    let hgt = new Float32Array(VW * VH);
-    for (let vj = 0; vj < VH; vj++) for (let vi = 0; vi < VW; vi++) {
-      let s = 0, sand = 0;
-      for (const [di, dj] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) { const c = CLS[cls(i0 + vi + di, j0 + vj + dj)]; s += HEIGHT[c] ?? 0; if (c === "bunker") sand++; }
-      hgt[vj * VW + vi] = s / 4 + (sand && sand < 4 ? 0.38 : 0);
-    }
-    for (let pass = 0; pass < 2; pass++) {
-      const nx = hgt.slice();
-      for (let vj = 1; vj < VH - 1; vj++) for (let vi = 1; vi < VW - 1; vi++) { const k = vj * VW + vi; nx[k] = (hgt[k] * 4 + hgt[k - 1] + hgt[k + 1] + hgt[k - VW] + hgt[k + VW]) / 8; }
-      hgt = nx;
-    }
-    // Gentle dome on the putting surface (shape only; contours are not surveyed).
-    const g = data.green; const gr = Math.max(g.dims[0], g.dims[1]) / 2 / data.scale.ydPerPx;
-    for (let vj = 0; vj < VH; vj++) for (let vi = 0; vi < VW; vi++) {
-      const px = (i0 + vi) * cellPx, py = (j0 + vj) * cellPx; const d = Math.hypot(px - g.x, py - g.y) / gr;
-      if (d < 1) hgt[vj * VW + vi] += 0.35 * (1 - d * d);
-    }
-    this.heightAt = (x, y) => { const vi = Math.round(x / cellPx) - i0, vj = Math.round(y / cellPx) - j0; return vi >= 0 && vj >= 0 && vi < VW && vj < VH ? hgt[vj * VW + vi] : 0; };
-
-    const pos = new Float32Array(VW * VH * 3);
-    for (let vj = 0; vj < VH; vj++) for (let vi = 0; vi < VW; vi++) {
-      const k = vj * VW + vi; const w = this.toWorld((i0 + vi) * cellPx, (j0 + vj) * cellPx, hgt[k]);
-      pos.set([w.x, w.y, w.z], k * 3);
-    }
-    const idx = [];
-    const near = (i, j) => { for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (cls(i + di, j + dj) !== 0) return true; return false; };
-    for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
-      if (texture ? !near(i0 + i, j0 + j) : cls(i0 + i, j0 + j) === 0) continue;
-      const a = j * VW + i, b = a + 1, c = a + VW, d = c + 1;
-      idx.push(a, c, b, b, c, d);
-    }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geo.setIndex(idx);
-    this.terrainInfo = { VW, VH, i0, j0, cls, cellPx };
-    if (!texture) geo.setAttribute("color", new THREE.BufferAttribute(this.colors(), 3));
-    // UVs map the club diagram (832 x 1248) onto the terrain so the model reads at full image resolution.
-    const uv = new Float32Array(VW * VH * 2);
-    for (let vj = 0; vj < VH; vj++) for (let vi = 0; vi < VW; vi++) { const k = vj * VW + vi; uv[k * 2] = ((i0 + vi) * cellPx) / (GW * cellPx); uv[k * 2 + 1] = 1 - ((j0 + vj) * cellPx) / (GH * cellPx); }
-    geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    geo.setAttribute("position", new THREE.BufferAttribute(T.positions, 3));
+    geo.setIndex(T.index);
+    // UVs map the club diagram (832 x 1248) onto the terrain; uv1 carries the fine grain in world metres.
+    geo.setAttribute("uv", new THREE.BufferAttribute(T.uvs, 2));
+    geo.setAttribute("uv1", new THREE.BufferAttribute(T.uv1, 2));
+    geo.setAttribute("color", new THREE.BufferAttribute(texture ? T.tint.slice() : this.colors(), 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: !texture, roughness: 0.92, metalness: 0, alphaTest: texture ? 0.5 : 0 });
+    if (!this.grain) this.grain = grainTexture();
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, alphaTest: texture ? 0.5 : 0, normalMap: this.grain, normalScale: new THREE.Vector2(0.3, 0.3) });
     // When the model is on screen, the shot lines draw themselves from the tee.
     const ready = () => { if (this.data !== data) return; this.startShots(); this.container.dispatchEvent(new CustomEvent("scene:ready", { bubbles: true })); };
     const useTex = (tx) => { if (this.data !== data) return; mat.map = tx; mat.emissive = new THREE.Color("#FFFFFF"); mat.emissiveMap = tx; mat.emissiveIntensity = 0.12; mat.needsUpdate = true; this.request(); ready(); };
-    const noTex = () => { if (this.data !== data) return; this.textured = false; geo.setAttribute("color", new THREE.BufferAttribute(this.colors(), 3)); mat.vertexColors = true; mat.alphaTest = 0; mat.needsUpdate = true; this.request(); ready(); };
+    const noTex = () => { if (this.data !== data) return; this.textured = false; geo.setAttribute("color", new THREE.BufferAttribute(this.colors(), 3)); mat.alphaTest = 0; mat.needsUpdate = true; this.request(); ready(); };
     if (texture && typeof texture === "object") queueMicrotask(() => useTex(texture));
     else if (texture) this.texture(texture).then(useTex, noTex);
     else queueMicrotask(ready);
     const terrain = new THREE.Mesh(geo, mat);
-    terrain.userData.hole = true; terrain.receiveShadow = true; this.terrain = terrain;
+    terrain.userData.hole = true; terrain.receiveShadow = true; terrain.castShadow = true; this.terrain = terrain;
     this.scene.add(terrain);
 
     // Table under the model
     const span = Math.max((bx1 - bx0), (by1 - by0)) * m;
     this.span = span;
     { const sc = this.sun.shadow.camera; const half = span * 0.62; Object.assign(sc, { left: -half, right: half, top: half, bottom: -half, near: 10, far: span * 4 }); sc.updateProjectionMatrix();
-      this.sun.position.set(-span * 0.45, span * 1.1, span * 0.38); this.sun.target.position.set(0, 0, 0); }
+      // A mid-height sun (about 47 degrees) so bunker lips and faces read in light and shade.
+      this.sun.position.set(-span * 0.55, span * 0.76, span * 0.45); this.sun.target.position.set(0, 0, 0); }
     // No table under the model: the background is the ground colour all the way out.
 
     // Water surface
@@ -247,8 +235,8 @@ export class HoleScene {
     const touches = (base, r, crown, lift) => arcPts.some((p) => {
       const dh = Math.hypot(p.x - base.x, p.z - base.z);
       if (dh > r * 1.4 + 1) return false;
-      const dy = p.y - lift;
-      return (dh / (r * 1.4)) ** 2 + (dy / (crown * 1.25)) ** 2 < 1 || (p.y < lift && dh < r * 0.2 + 0.8); // canopy or trunk
+      const dy = p.y - (base.y + lift);
+      return (dh / (r * 1.4)) ** 2 + (dy / (crown * 1.25)) ** 2 < 1 || (p.y < base.y + lift && dh < r * 0.2 + 0.8); // canopy or trunk
     });
     const keep = [];
     const stepAll = treeCells.length / Math.max(cap, 1);
@@ -256,7 +244,8 @@ export class HoleScene {
       const [i, j] = treeCells[Math.floor(k * stepAll)];
       const h1 = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453 % 1, h2 = Math.sin(i * 39.34 + j * 11.13) * 9631.17 % 1, h3 = Math.abs(Math.sin(i * 7.13 + j * 3.71) * 1371.3 % 1);
       const r = 2.4 + Math.abs(h1) * 3.4; const crown = r * (0.72 + h3 * 0.2); const lift = r * 0.75 + 1.6;
-      const base = this.toWorld(i * cellPx + cellPx * 1.5 + h2 * 4, j * cellPx + cellPx * 1.5 + h1 * 4, 0);
+      const tx0 = i * cellPx + cellPx * 1.5 + h2 * 4, ty0 = j * cellPx + cellPx * 1.5 + h1 * 4;
+      const base = this.toWorld(tx0, ty0, this.heightAt(tx0, ty0));
       if (!touches(base, r, crown, lift)) keep.push({ base, r, crown, lift, h2, h3 });
     }
     this.treesRemoved = cap - keep.length;
@@ -269,7 +258,7 @@ export class HoleScene {
       const greens = ["#3B5A2C", "#4E6E36", "#5A7B3C", "#43622F", "#667F45"];
       keep.forEach(({ base, r, crown, lift, h2, h3 }, k) => {
         q.setFromAxisAngle(up, h3 * Math.PI * 2);
-        mtx.compose(base.clone().setY(lift), q, new THREE.Vector3(r, crown, r)); canopies.setMatrixAt(k, mtx);
+        mtx.compose(base.clone().setY(base.y + lift), q, new THREE.Vector3(r, crown, r)); canopies.setMatrixAt(k, mtx);
         mtx.compose(base, q, new THREE.Vector3(r * 0.9, lift, r * 0.9)); trunks.setMatrixAt(k, mtx);
         col.set(greens[Math.floor(h3 * greens.length) % greens.length]).offsetHSL(0, 0, (Math.abs(h2) - 0.5) * 0.05); canopies.setColorAt(k, col);
       });
@@ -279,7 +268,7 @@ export class HoleScene {
 
     // Penalty-area lines as drawn on the club diagram (not an approved boundary).
     const red = [];
-    for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) if (CLS[cls(i, j)] === "redline") { const p = this.toWorld(i * cellPx + cellPx / 2, j * cellPx + cellPx / 2, 0.5); red.push(p.x, p.y, p.z); }
+    for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) if (CLS[cls(i, j)] === "redline") { const rx = i * cellPx + cellPx / 2, ry = j * cellPx + cellPx / 2; const p = this.toWorld(rx, ry, Math.max(0.5, this.heightAt(rx, ry) + 0.45)); red.push(p.x, p.y, p.z); }
     if (red.length) {
       const rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.Float32BufferAttribute(red, 3));
       const pts = new THREE.Points(rg, new THREE.PointsMaterial({ color: "#B3332E", size: Math.max(1.2, cellPx * m * 1.1), sizeAttenuation: true }));
@@ -334,30 +323,22 @@ export class HoleScene {
   }
 
   colors() {
-    const { VW, VH, i0, j0, cls } = this.terrainInfo; const e = this.enabled;
-    const off = (n) => (n === "fairway" || n === "green" || n === "bunker" || n === "path") && e[n] === false;
-    const cols = new Float32Array(VW * VH * 3); const c = new THREE.Color(), tmp = new THREE.Color();
-    const d = this.data; const route = [d.tees[0], ...d.line.map(([x, y]) => ({ x, y })), { x: d.green.x, y: d.green.y }];
+    const e = this.enabled; const d = this.data;
+    const route = [d.tees[0], ...d.line.map(([x, y]) => ({ x, y })), { x: d.green.x, y: d.green.y }];
     const ax = route[route.length - 1].x - route[0].x, ay = route[route.length - 1].y - route[0].y; const al = Math.hypot(ax, ay) || 1;
-    for (let vj = 0; vj < VH; vj++) for (let vi = 0; vi < VW; vi++) {
-      c.setRGB(0, 0, 0); let n = 0, nearTrees = 0;
-      for (const [di, dj] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
-        let name = CLS[cls(i0 + vi + di, j0 + vj + dj)];
-        if (name === "trees") nearTrees++;
-        if (off(name) || name === "trees" || name === "redline" || name === "ink") name = "rough";
-        tmp.set(COLOR[name]); c.add(tmp); n++;
-      }
-      c.multiplyScalar(1 / n);
-      const px = (i0 + vi) * this.terrainInfo.cellPx, py = (j0 + vj) * this.terrainInfo.cellPx;
+    const off = (n) => (n === "fairway" || n === "green" || n === "bunker" || n === "path") && e[n] === false;
+    const c = new THREE.Color(), tmp = new THREE.Color();
+    return this.T.classColors(e, COLOR, (px, py, four, own) => {
+      c.setRGB(0, 0, 0); let nearTrees = 0;
+      for (let name of four) { if (name === "trees") nearTrees++; if (off(name) || name === "trees" || name === "redline" || name === "ink") name = "rough"; tmp.set(COLOR[name]); c.add(tmp); }
+      c.multiplyScalar(1 / four.length);
       const along = ((px - route[0].x) * ax + (py - route[0].y) * ay) / al * this.m;
-      const own = CLS[cls(i0 + vi, j0 + vj)];
       if (own === "fairway" && e.fairway !== false) c.multiplyScalar(1 + 0.055 * Math.sign(Math.sin(along / 7)));
       if (own === "green" && e.green !== false) c.multiplyScalar(1 + 0.03 * Math.sign(Math.sin(along / 2.2)));
       if (own === "rough") c.multiplyScalar(0.96 + 0.06 * Math.abs(Math.sin(px * 0.37) * Math.cos(py * 0.29)));
       if (nearTrees) c.multiplyScalar(1 - 0.08 * nearTrees);
-      cols.set([c.r, c.g, c.b], (vj * VW + vi) * 3);
-    }
-    return cols;
+      return [c.r, c.g, c.b];
+    });
   }
 
   applyLayers(enabled) {
@@ -472,7 +453,7 @@ export class HoleScene {
     const el = this.onLabel?.(kind, extra);
     if (!el) return;
     this.container.querySelector("[data-labels]")?.append(el);
-    this.labels.push({ id, pos, el, kind });
+    this.labels.push({ id, pos, el, kind, extra });
   }
   updateLabels() {
     const w = this.container.clientWidth, h = this.container.clientHeight; const v = new THREE.Vector3();
@@ -535,6 +516,7 @@ export class HoleScene {
     this.clearHole();
     this.scene.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); });
     this.texCache?.forEach((pr) => pr.then((tx) => tx.dispose(), () => {}));
+    this.grain?.dispose();
     this.controls.dispose(); this.renderer.dispose(); this.renderer.forceContextLoss?.();
     this.ro.disconnect(); this.io.disconnect(); document.removeEventListener("visibilitychange", this.onVis);
     this.canvas.remove();

@@ -1,44 +1,300 @@
 {
-  "note": "Club facts shown on the public site. Every value carries the source it came from (see content/sources.json). Retrieved 18 November 2026; recheck before launch.",
-  "name": { "th": "สนามกอล์ฟกรุงเทพกรีฑา", "en": "Krungthep Kreetha Golf Course" },
-  "association": { "th": "สมาคมกรุงเทพกรีฑา", "en": "Krungthep Kreetha Association" },
-  "shortName": { "th": "กรุงเทพกรีฑา", "en": "Krungthep Kreetha" },
-  "officialSite": "https://www.krungthepkreetha.co.th/",
-  "address": {
-    "th": "282 ถนนกรุงเทพกรีฑา แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240",
-    "en": "282 Krungthep Kreetha Road, Hua Mak, Bang Kapi, Bangkok 10240",
-    "source": "S01"
+ "note": "Club facts shown on the public site. Every value carries the source it came from (see content/sources.json). Retrieved 18 November 2026; recheck before launch.",
+ "name": {
+  "th": "สนามกอล์ฟกรุงเทพกรีฑา",
+  "en": "Krungthep Kreetha Golf Course"
+ },
+ "association": {
+  "th": "สมาคมกรุงเทพกรีฑา",
+  "en": "Krungthep Kreetha Association"
+ },
+ "shortName": {
+  "th": "กรุงเทพกรีฑา",
+  "en": "Krungthep Kreetha"
+ },
+ "officialSite": "https://www.krungthepkreetha.co.th/",
+ "address": {
+  "th": "282 ถนนกรุงเทพกรีฑา แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240",
+  "en": "282 Krungthep Kreetha Road, Hua Mak, Bang Kapi, Bangkok 10240",
+  "source": "S01"
+ },
+ "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%81%E0%B8%AD%E0%B8%A5%E0%B9%8C%E0%B8%9F%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E%E0%B8%81%E0%B8%A3%E0%B8%B5%E0%B8%91%E0%B8%B2",
+ "email": {
+  "value": "admin@krungthepkreetha.co.th",
+  "source": "S01"
+ },
+ "contacts": [
+  {
+   "id": "teetimes",
+   "label": {
+    "th": "จองเวลาออกรอบ",
+    "en": "Tee-time booking"
+   },
+   "numbers": [
+    "02-736-0378",
+    "02-736-0379",
+    "061-401-5208",
+    "061-401-5903"
+   ],
+   "display": {
+    "th": "0-2736-0378-9, 061-401-5208, 061-401-5903",
+    "en": "0-2736-0378-9, 061-401-5208, 061-401-5903"
+   },
+   "source": "S01"
   },
-  "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%A1%E0%B8%81%E0%B8%AD%E0%B8%A5%E0%B9%8C%E0%B8%9F%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E%E0%B8%81%E0%B8%A3%E0%B8%B5%E0%B8%91%E0%B8%B2",
-  "email": { "value": "admin@krungthepkreetha.co.th", "source": "S01" },
-  "contacts": [
-    { "id": "teetimes", "label": { "th": "จองเวลาออกรอบ", "en": "Tee-time booking" }, "numbers": ["02-736-0378", "02-736-0379", "061-401-5208", "061-401-5903"], "display": { "th": "0-2736-0378-9, 061-401-5208, 061-401-5903", "en": "0-2736-0378-9, 061-401-5208, 061-401-5903" }, "source": "S01" },
-    { "id": "office", "label": { "th": "สำนักงานสมาคม", "en": "Association office" }, "numbers": ["02-736-1662"], "display": { "th": "0-2736-1662-3", "en": "0-2736-1662-3" }, "source": "S01" },
-    { "id": "range", "label": { "th": "สนามฝึกซ้อมกอล์ฟ", "en": "Driving range" }, "numbers": ["080-392-6032"], "display": { "th": "080-392-6032", "en": "080-392-6032" }, "source": "S05" },
-    { "id": "banquet", "label": { "th": "ห้องจัดเลี้ยง", "en": "Banquet rooms" }, "numbers": ["02-736-1662"], "display": { "th": "0-2736-1662-3 ต่อ 119", "en": "0-2736-1662-3 ext. 119" }, "source": "S05" },
-    { "id": "fax", "label": { "th": "แฟกซ์", "en": "Fax" }, "numbers": [], "display": { "th": "0-2736-0379", "en": "0-2736-0379" }, "source": "S01" }
-  ],
-  "line": { "id": "@ktktgolfcourse", "url": "https://page.line.me/tud5252c", "source": "S04 poster; S01 link" },
-  "facebook": "https://web.facebook.com/p/Krungthep-Kreetha-100063479051973/",
-  "memberLogin": "https://www.krungthepkreetha.co.th/ktkt-login/",
-  "hours": {
-    "course": { "th": [["อังคาร ถึง อาทิตย์", "06.00 ถึง 18.00 น."], ["จันทร์", "08.00 ถึง 19.00 น."]], "en": [["Tuesday to Sunday", "06:00 to 18:00"], ["Monday", "08:00 to 19:00"]], "source": "S01 (labelled 'opening hours' on the homepage; not a tee-time schedule)" },
-    "range": { "th": [["จันทร์", "11.00 ถึง 21.30 น."], ["อังคาร ถึง อาทิตย์ และวันหยุดนักขัตฤกษ์", "07.00 ถึง 21.30 น."], ["ปิดการขาย", "21.00 น."]], "en": [["Monday", "11:00 to 21:30"], ["Tuesday to Sunday and public holidays", "07:00 to 21:30"], ["Last order", "21:00"]], "source": "S05 driving range page" },
-    "office": { "th": [["จันทร์ ถึง ศุกร์", "09.00 ถึง 18.00 น."], ["เสาร์", "09.00 ถึง 18.00 น."]], "en": [["Monday to Friday", "09:00 to 18:00"], ["Saturday", "09:00 to 18:00"]], "source": "S05 contact page" },
-    "proshop": { "th": [["ทุกวัน", "08.00 ถึง 17.00 น."]], "en": [["Daily", "08:00 to 17:00"]], "source": "S05 pro shop page (days not stated)" },
-    "lockers1": { "th": [["อังคาร ถึง ศุกร์", "08.00 ถึง 20.00 น."], ["เสาร์ ถึง อาทิตย์", "05.00 ถึง 20.00 น."], ["จันทร์", "ปิด ยกเว้นวันหยุดนักขัตฤกษ์"]], "en": [["Tuesday to Friday", "08:00 to 20:00"], ["Saturday and Sunday", "05:00 to 20:00"], ["Monday", "Closed, except public holidays"]], "source": "S05 locker page" },
-    "lockers2": { "th": [["อังคาร ถึง อาทิตย์", "05.00 ถึง 20.00 น."], ["จันทร์", "ปิด ยกเว้นวันหยุดนักขัตฤกษ์"]], "en": [["Tuesday to Sunday", "05:00 to 20:00"], ["Monday", "Closed, except public holidays"]], "source": "S05 locker page" }
+  {
+   "id": "office",
+   "label": {
+    "th": "สำนักงานสมาคม",
+    "en": "Association office"
+   },
+   "numbers": [
+    "02-736-1662"
+   ],
+   "display": {
+    "th": "0-2736-1662-3",
+    "en": "0-2736-1662-3"
+   },
+   "source": "S01"
   },
-  "facts": {
-    "opened": { "value": "1969-06-01", "source": "S03" },
-    "holes": { "value": 18, "source": "S01, S02" },
-    "rangeBays": { "value": 38, "source": "S01 homepage" },
-    "rebuild": { "architect": "James Robert Vaughan", "reopened": "1995-07-01", "source": "S03" }
+  {
+   "id": "range",
+   "label": {
+    "th": "สนามฝึกซ้อมกอล์ฟ",
+    "en": "Driving range"
+   },
+   "numbers": [
+    "080-392-6032"
+   ],
+   "display": {
+    "th": "080-392-6032",
+    "en": "080-392-6032"
+   },
+   "source": "S05"
   },
-  "nearby": [
-    { "th": "ท่าอากาศยานสุวรรณภูมิ", "en": "Suvarnabhumi Airport" },
-    { "th": "โรงแรมเดอะ แกรนด์ โฟร์วิงส์ คอนเวนชั่น", "en": "The Grand Fourwings Convention Hotel" },
-    { "th": "The Park กรุงเทพกรีฑา", "en": "The Park Krungthep Kreetha" },
-    { "th": "Market Place กรุงเทพกรีฑา", "en": "Market Place Krungthep Kreetha" }
-  ]
+  {
+   "id": "banquet",
+   "label": {
+    "th": "ห้องจัดเลี้ยง",
+    "en": "Banquet rooms"
+   },
+   "numbers": [
+    "02-736-1662"
+   ],
+   "display": {
+    "th": "0-2736-1662-3 ต่อ 119",
+    "en": "0-2736-1662-3 ext. 119"
+   },
+   "source": "S05"
+  },
+  {
+   "id": "fax",
+   "label": {
+    "th": "แฟกซ์",
+    "en": "Fax"
+   },
+   "numbers": [],
+   "display": {
+    "th": "0-2736-0379",
+    "en": "0-2736-0379"
+   },
+   "source": "S01",
+   "note": {
+    "th": "หน้าแรกของเว็บไซต์สมาคมระบุ 0-2736-0379 ส่วนประกาศของสมาคมปี 2569 ระบุแฟกซ์ 0-2736-2230 รอสมาคมยืนยัน",
+    "en": "The club's homepage lists 0-2736-0379; the club's 2026 notices give fax 0-2736-2230. Awaiting the club's confirmation."
+   }
+  }
+ ],
+ "line": {
+  "id": "@ktktgolfcourse",
+  "url": "https://page.line.me/tud5252c",
+  "source": "S04 poster; S01 link"
+ },
+ "facebook": "https://web.facebook.com/p/Krungthep-Kreetha-100063479051973/",
+ "memberLogin": "https://www.krungthepkreetha.co.th/ktkt-login/",
+ "hours": {
+  "course": {
+   "th": [
+    [
+     "อังคาร ถึง อาทิตย์",
+     "06.00 ถึง 18.00 น."
+    ],
+    [
+     "จันทร์",
+     "08.00 ถึง 19.00 น."
+    ]
+   ],
+   "en": [
+    [
+     "Tuesday to Sunday",
+     "06:00 to 18:00"
+    ],
+    [
+     "Monday",
+     "08:00 to 19:00"
+    ]
+   ],
+   "source": "S01 (labelled 'opening hours' on the homepage; not a tee-time schedule)"
+  },
+  "range": {
+   "th": [
+    [
+     "จันทร์",
+     "11.00 ถึง 21.30 น."
+    ],
+    [
+     "อังคาร ถึง อาทิตย์ และวันหยุดนักขัตฤกษ์",
+     "07.00 ถึง 21.30 น."
+    ],
+    [
+     "ปิดการขาย",
+     "21.00 น."
+    ]
+   ],
+   "en": [
+    [
+     "Monday",
+     "11:00 to 21:30"
+    ],
+    [
+     "Tuesday to Sunday and public holidays",
+     "07:00 to 21:30"
+    ],
+    [
+     "Last order",
+     "21:00"
+    ]
+   ],
+   "source": "S05 driving range page"
+  },
+  "office": {
+   "th": [
+    [
+     "จันทร์ ถึง ศุกร์",
+     "09.00 ถึง 18.00 น."
+    ],
+    [
+     "เสาร์",
+     "09.00 ถึง 18.00 น."
+    ]
+   ],
+   "en": [
+    [
+     "Monday to Friday",
+     "09:00 to 18:00"
+    ],
+    [
+     "Saturday",
+     "09:00 to 18:00"
+    ]
+   ],
+   "source": "S05 contact page"
+  },
+  "proshop": {
+   "th": [
+    [
+     "ทุกวัน",
+     "08.00 ถึง 17.00 น."
+    ]
+   ],
+   "en": [
+    [
+     "Daily",
+     "08:00 to 17:00"
+    ]
+   ],
+   "source": "S05 pro shop page (days not stated)"
+  },
+  "lockers1": {
+   "th": [
+    [
+     "อังคาร ถึง ศุกร์",
+     "08.00 ถึง 20.00 น."
+    ],
+    [
+     "เสาร์ ถึง อาทิตย์",
+     "05.00 ถึง 20.00 น."
+    ],
+    [
+     "จันทร์",
+     "ปิด ยกเว้นวันหยุดนักขัตฤกษ์"
+    ]
+   ],
+   "en": [
+    [
+     "Tuesday to Friday",
+     "08:00 to 20:00"
+    ],
+    [
+     "Saturday and Sunday",
+     "05:00 to 20:00"
+    ],
+    [
+     "Monday",
+     "Closed, except public holidays"
+    ]
+   ],
+   "source": "S05 locker page"
+  },
+  "lockers2": {
+   "th": [
+    [
+     "อังคาร ถึง อาทิตย์",
+     "05.00 ถึง 20.00 น."
+    ],
+    [
+     "จันทร์",
+     "ปิด ยกเว้นวันหยุดนักขัตฤกษ์"
+    ]
+   ],
+   "en": [
+    [
+     "Tuesday to Sunday",
+     "05:00 to 20:00"
+    ],
+    [
+     "Monday",
+     "Closed, except public holidays"
+    ]
+   ],
+   "source": "S05 locker page"
+  }
+ },
+ "facts": {
+  "opened": {
+   "value": "1969-06-01",
+   "source": "S03"
+  },
+  "holes": {
+   "value": 18,
+   "source": "S01, S02"
+  },
+  "rangeBays": {
+   "value": 38,
+   "source": "S01 homepage"
+  },
+  "rebuild": {
+   "architect": "James Robert Vaughan",
+   "reopened": "1995-07-01",
+   "source": "S03"
+  }
+ },
+ "nearby": [
+  {
+   "th": "ท่าอากาศยานสุวรรณภูมิ",
+   "en": "Suvarnabhumi Airport"
+  },
+  {
+   "th": "โรงแรมเดอะ แกรนด์ โฟร์วิงส์ คอนเวนชั่น",
+   "en": "The Grand Fourwings Convention Hotel"
+  },
+  {
+   "th": "The Park กรุงเทพกรีฑา",
+   "en": "The Park Krungthep Kreetha"
+  },
+  {
+   "th": "Market Place กรุงเทพกรีฑา",
+   "en": "Market Place Krungthep Kreetha"
+  }
+ ]
 }

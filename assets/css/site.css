@@ -7,7 +7,7 @@
   --paper: #FBFAF5;
   --ink: #152A24;
   --ink-2: #3D504A;
-  --ink-3: #66756F;
+  --ink-3: #56655F; /* 4.5:1 or better on ivory, paper and the sand and sage panels (audit A1) */
   --evergreen: #254E3D;
   --evergreen-deep: #1A3A2D;
   --sage: #C4D0BB;
@@ -760,3 +760,39 @@ table.data a:hover { text-decoration: underline; }
 
 /* Tee colours from the club's scorecard. */
 .tee-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--tee); box-shadow: inset 0 0 0 1px rgba(21, 42, 36, .3); margin-right: 7px; vertical-align: -1px; flex: none; }
+
+/* 20 Nov 2026 audit (H2): the home finder's seven dates fit the booking card where they can, and a soft
+   edge shows when there are more to swipe to, instead of a native scrollbar. */
+[data-dock] .date-strip { grid-auto-columns: minmax(46px, 1fr); scrollbar-width: none; }
+[data-dock] .date-strip::-webkit-scrollbar { display: none; }
+[data-dock] .date-strip .date-chip { min-height: 58px; }
+.date-strip.has-more-right { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+.date-strip.has-more-left { -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px); mask-image: linear-gradient(90deg, transparent, #000 36px); }
+.date-strip.has-more-left.has-more-right { -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+/* Slot chips carry the places left in words; the dots stay as a cue. */
+.slot .free { font-size: .74rem; color: var(--ink-3); white-space: nowrap; }
+.slot[aria-pressed="true"] .free { color: inherit; opacity: .85; }
+.money .item > span:first-child { display: block; }
+details.demo-ids { margin-top: 2px; }
+details.demo-ids summary { cursor: pointer; }
+.plain-list { padding-left: 1.3em; display: grid; gap: 8px; margin: 0; }
+.plain-list li { padding-left: 4px; }
+/* Scorecard: the column a link points at (#h7) is marked. */
+.sc .is-target { background: color-mix(in srgb, var(--evergreen) 14%, transparent) !important; box-shadow: inset 0 0 0 1px var(--evergreen); }
+@media print { .site-header, .site-footer, .action-bar, .ribbon, .no-print { display: none !important; } .sc-wrap { overflow: visible !important; } }
+/* Contacts: published wording first, then one call link per complete number (audit F1). */
+.contacts .pub { display: block; }
+.contacts .tel-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; }
+.contacts a.tel { font-size: .86rem; min-height: 24px; display: inline-flex; align-items: center; }
+.field-error { color: var(--bad); font-size: .85rem; margin: 4px 0 0; }
+/* Practical pages (Rates): a shorter heading so the prices are in the first view (audit C3). */
+.page-hero.compact { padding-top: clamp(28px, 3.5vw, 52px); padding-bottom: clamp(20px, 2.5vw, 36px); }
+.page-hero.compact .h1 { font-size: clamp(2rem, 3.4vw, 3.1rem); }
+.page-hero.compact .g12 { margin-top: 16px !important; }
+.contacts .photo-note { display: block; margin-top: 4px; }
+.sc thead .is-target { background: var(--evergreen) !important; box-shadow: inset 0 -3px 0 #F2CF2E; }
+.hours.contacts > div > span:first-child { flex: none; max-width: 40%; }
+.hours.contacts > div > span:last-child { flex: 1 1 auto; text-align: right; }
+.hours.contacts .pub, .hours.contacts .photo-note { max-width: none; overflow-wrap: normal; text-align: right; font-weight: 500; }
+.hours.contacts .photo-note { font-weight: 400; }
+.hours.contacts .tel-links { justify-content: flex-end; font-weight: 400; }

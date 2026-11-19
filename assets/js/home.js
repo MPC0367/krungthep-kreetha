@@ -28,16 +28,22 @@ if (dock) {
     b.setAttribute("aria-checked", String(d === date));
     b.setAttribute("aria-label", formatDate(d, lang) + (closed ? (th ? " ปิดรับจองออนไลน์" : ", no online tee times") : ""));
     b.innerHTML = `<span class="dow">${i === 0 ? (th ? "วันนี้" : "Today") : formatDate(d, lang, { weekday: "short" })}</span><span class="d num">${Number(d.slice(8))}</span><span class="m">${formatDate(d, lang, { month: "short" })}</span>`;
-    b.addEventListener("click", () => { date = d; input.value = d; strip.querySelectorAll(".date-chip").forEach((c) => c.setAttribute("aria-checked", String(c.dataset.date === d))); });
+    b.tabIndex = d === date ? 0 : -1;
+    b.addEventListener("click", () => { date = d; input.value = d; strip.querySelectorAll(".date-chip").forEach((c) => { const on = c.dataset.date === d; c.setAttribute("aria-checked", String(on)); c.tabIndex = on ? 0 : -1; }); b.scrollIntoView({ block: "nearest", inline: "nearest" }); });
     strip.append(b);
   }
+  // One stop in the tab order; arrows, Home and End move the choice (a single-selection radio group).
   strip.addEventListener("keydown", (e) => {
-    if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
-    const chips = [...strip.children]; const i = chips.indexOf(document.activeElement);
-    const n = chips[(i + (e.key === "ArrowRight" ? 1 : -1) + chips.length) % chips.length]; n.focus(); n.click(); e.preventDefault();
+    const chips = [...strip.children]; const i = chips.indexOf(document.activeElement); if (i < 0) return;
+    const k = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: chips.length - 1 }[e.key];
+    if (k == null) return;
+    const n = chips[(k + chips.length) % chips.length]; n.focus(); n.click(); e.preventDefault();
   });
   wrap.querySelector("label").id = "dock-date-label";
   input.type = "hidden";
+  // When the seven dates do not fit, a soft edge shows there is more to swipe to.
+  const cue = () => { const more = strip.scrollWidth - strip.clientWidth > 2; strip.classList.toggle("has-more-right", more && strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 2); strip.classList.toggle("has-more-left", more && strip.scrollLeft > 2); };
+  strip.addEventListener("scroll", cue, { passive: true }); new ResizeObserver(cue).observe(strip);
   wrap.append(strip);
   const more = document.createElement("a");
   more.className = "small"; more.href = dock.action; more.textContent = th ? "เลือกวันอื่นภายใน 14 วัน" : "Other dates in the next 14 days";
@@ -63,7 +69,8 @@ function holeViewer(box) {
   const status = box.querySelector("[data-hv-status]");
   const topBtn = box.querySelector("[data-hv-top]");
   const engageBtn = box.querySelector("[data-hv-engage]");
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Reduced motion or the site's Pause motion, read each time so a change during the visit applies.
+  const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("is-paused");
   const touch = matchMedia("(pointer: coarse)").matches;
   const cache = new Map();
   let scene = null, failed = false, token = 0, mode = "3d", cur = null, near = false;
@@ -81,7 +88,7 @@ function holeViewer(box) {
     try {
       const mod = await import("./explorer/scene3d.js");
       if (!mod.webglAvailable()) throw new Error("webgl");
-      scene = new mod.HoleScene(sceneEl, { onLabel: label, reducedMotion: reduce, isTouch: touch, transparent: true });
+      scene = new mod.HoleScene(sceneEl, { onLabel: label, reducedMotion: still(), isTouch: touch, transparent: true });
       sceneEl.addEventListener("scene:ready", () => box.classList.add("is-drawn"));
       sceneEl.addEventListener("scene:moved", () => { setTop(false); box.classList.add("was-moved"); });
       sceneEl.addEventListener("scene:lost", () => { failed = true; box.classList.add("no-3d"); setMode("2d"); });
@@ -103,21 +110,24 @@ function holeViewer(box) {
       const [full, tx] = await Promise.all([getData(h), s.texture(h.clean || h.cut).catch(() => null)]);
       const d = { ...full, tees: full.tees.filter((t) => h.tees.some((x) => x.id === t.id)) }; // the scorecard's four tees
       if (my !== token) return;
+      s.reduced = still();
       s.load(d, { tee: "1", enabled: { labels: true, line: true, carry: false }, texture: tx || h.clean || h.cut, distances: h.arcs ? { tees: h.tees, approach: h.arcs.approach, approx: h.arcs.approx } : null });
       s.preset("top", { instant: true });
       setTop(true);
       status.textContent = th ? `แบบจำลองหลุม ${h.n} มองจากด้านบน` : `Hole ${h.n} model, seen from above`;
-      prefetch(h.n);
+      const next = neighbour(h.n);
+      s.retain?.([h.clean || h.cut, next && (next.clean || next.cut)]); // a small cache: this hole and the likely next one
+      prefetch(next);
     } catch { if (my === token) { box.classList.remove("is-drawn"); setMode("2d"); } }
     finally { if (my === token) box.classList.remove("is-loading"); }
   }
-  // Once one hole is showing, the others are fetched quietly, nearest first, so switching is immediate.
-  let prefetching = false;
-  async function prefetch(from) {
-    if (prefetching || !scene) return; prefetching = true;
-    const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 200)));
-    const list = data.filter((x) => x.model && x.n !== from).sort((a, b) => Math.abs(a.n - from) - Math.abs(b.n - from));
-    for (const x of list) { await idle(); try { await Promise.all([getData(x), scene.texture(x.clean || x.cut)]); } catch {} }
+  // Only the selected hole loads straight away. Once idle, at most one likely neighbour (the next hole) is
+  // warmed, and nothing at all on a data-saving connection.
+  const neighbour = (n) => data.find((x) => x.n === (n === 18 ? 1 : n + 1) && x.model) || null;
+  function prefetch(x) {
+    if (!x || !scene || navigator.connection?.saveData) return;
+    const idle = window.requestIdleCallback ? (f) => requestIdleCallback(f, { timeout: 2500 }) : (f) => setTimeout(f, 400);
+    idle(() => { getData(x).catch(() => {}); scene.texture(x.clean || x.cut).catch(() => {}); });
   }
   function setMode(m) {
     mode = m === "3d" && !failed && cur?.model ? "3d" : "2d";
@@ -127,7 +137,7 @@ function holeViewer(box) {
     if (mode === "3d") load3d(); else { token++; engage(false); }
   }
   box.querySelectorAll("[data-hv-mode]").forEach((b) => b.addEventListener("click", () => { box.dataset.pref = b.dataset.hvMode; setMode(b.dataset.hvMode); }));
-  topBtn.addEventListener("click", () => { scene?.preset("top"); setTop(true); });
+  topBtn.addEventListener("click", () => { if (scene) scene.reduced = still(); scene?.preset("top"); setTop(true); });
   engageBtn.addEventListener("click", () => engage(!box.classList.contains("is-engaged")));
   document.addEventListener("pointerdown", (e) => { if (!box.contains(e.target)) engage(false); });
   box.querySelectorAll("[data-hv-zoom]").forEach((b) => b.addEventListener("click", () => { scene?.zoom(b.dataset.hvZoom === "in" ? 0.8 : 1.25); setTop(false); }));
@@ -202,8 +212,8 @@ if (idx) {
   items.forEach((it) => { it.addEventListener("mouseenter", () => activate(it)); it.addEventListener("focusin", () => activate(it)); });
 }
 
-// ---- Facilities dropdowns: nothing open on arrival, one open at a time, and everything closes again
-// once the section has scrolled out of view.
+// ---- Facilities dropdowns: nothing open on a first visit, one open at a time (audit H4, 20 Nov 2026:
+// they no longer close when the section scrolls out of view).
 const facSection = document.querySelector("[data-fac]");
 if (facSection) {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -225,16 +235,26 @@ if (facSection) {
       a.onfinish = () => { if (btn.getAttribute("aria-expanded") === "false") panel.hidden = true; };
     }
   };
+  // The visitor's place is kept: an open facility (and any open school inside it) stays open while they read
+  // another section, and comes back open when they return from a detail page in the same tab.
+  const KEY = "kk.fac";
+  const remember = () => { try { sessionStorage.setItem(KEY, JSON.stringify({ open: items.findIndex((x) => parts(x).btn.getAttribute("aria-expanded") === "true"), schools: [...facSection.querySelectorAll("details.school")].map((d) => d.open) })); } catch {} };
   items.forEach((it) => parts(it).btn.addEventListener("click", () => {
     const open = parts(it).btn.getAttribute("aria-expanded") !== "true";
     items.forEach((o) => { if (o !== it) setOpen(o, false); });
     setOpen(it, open);
+    remember();
     if (open && !reduce) {
       // Keep the opened heading in view when a long panel above it closes.
       requestAnimationFrame(() => { const top = it.getBoundingClientRect().top; const hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 72; if (top < hh) window.scrollBy({ top: top - hh - 12, behavior: "smooth" }); });
     }
   }));
-  new IntersectionObserver(([e]) => { if (!e.isIntersecting) { items.forEach((it) => setOpen(it, false, { instant: true })); facSection.querySelectorAll("details.school[open]").forEach((d) => d.removeAttribute("open")); } }, { threshold: 0 }).observe(facSection);
+  facSection.querySelectorAll("details.school").forEach((d) => d.addEventListener("toggle", remember));
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(KEY) || "null");
+    if (saved?.open >= 0 && items[saved.open]) setOpen(items[saved.open], true, { instant: true });
+    facSection.querySelectorAll("details.school").forEach((d, i) => { if (saved?.schools?.[i]) d.open = true; });
+  } catch {}
 }
 
 // ---- Live open/closed status on hours cards, in Bangkok time from the listed hours.
