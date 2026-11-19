@@ -58,7 +58,7 @@ export class HoleScene {
     this.scene = new THREE.Scene();
     // Transparent mode lets the page background show around the model (home page); otherwise a soft table colour.
     if (transparent) this.renderer.setClearColor(0x000000, 0);
-    else { this.scene.background = gradientTexture([[0, "#D6E3E8"], [0.55, "#E9ECE4"], [1, "#EEEBDD"]]); this.scene.fog = new THREE.Fog("#EEEBDD", 700, 1600); }
+    else { this.scene.background = new THREE.Color("#E2DECB"); this.scene.fog = new THREE.Fog("#E2DECB", 700, 1600); } // one flat ground colour, no sky
     // Soft daylight from a sky-to-grass gradient, so greens, sand and water pick up natural tones and sheen.
     try {
       const pm = new THREE.PMREMGenerator(this.renderer); const env = gradientTexture([[0, "#CFE0EA"], [0.48, "#F4F2E9"], [0.52, "#B9C49A"], [1, "#6E7F52"]]);
@@ -218,10 +218,7 @@ export class HoleScene {
     this.span = span;
     { const sc = this.sun.shadow.camera; const half = span * 0.62; Object.assign(sc, { left: -half, right: half, top: half, bottom: -half, near: 10, far: span * 4 }); sc.updateProjectionMatrix();
       this.sun.position.set(-span * 0.45, span * 1.1, span * 0.38); this.sun.target.position.set(0, 0, 0); }
-    if (!this.transparent) {
-      const base = new THREE.Mesh(new THREE.CircleGeometry(span * 0.95, 64), new THREE.MeshStandardMaterial({ color: "#E2DECB", roughness: 1 }));
-      base.rotation.x = -Math.PI / 2; base.position.y = -2.7; base.receiveShadow = true; base.userData.hole = true; this.scene.add(base);
-    }
+    // No table under the model: the background is the ground colour all the way out.
 
     // Water surface
     const wpos = [];
