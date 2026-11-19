@@ -39,12 +39,12 @@ function renderPanel(h) {
   const sel = tees.find((t) => t.id === state.tee) || tees[0];
   const T = (o) => o?.[lang] ?? "";
   panel.innerHTML = `
-    <div class="xp-head"><span class="xp-n" aria-hidden="true">${pad2(h.n)}</span><div><h1 class="h3" id="hole-title">${th ? `หลุมที่ ${h.n}` : `Hole ${h.n}`}</h1><p class="muted small">${h.par ? `${th ? "พาร์" : "Par"} ${h.par}` : th ? "รอยืนยันพาร์" : "Par to be confirmed"}${sel?.yards ? `, ${fmt(sel.yards)} ${th ? `จากแท่นที ${sel.id}` : `from Tee ${sel.id}`}` : ""}</p></div></div>
+    <div class="xp-head"><span class="xp-n" aria-hidden="true">${pad2(h.n)}</span><div><h1 class="h3" id="hole-title">${th ? `หลุมที่ ${h.n}` : `Hole ${h.n}`}</h1><p class="muted small">${h.par ? `${th ? "พาร์" : "Par"} ${h.par}` : th ? "รอยืนยันพาร์" : "Par to be confirmed"}${sel?.yards ? (th ? ` ระยะ ${fmt(sel.yards)} จากแท่นทีสี${sel.name.th}` : `, ${fmt(sel.yards)} from the ${sel.name.en.toLowerCase()} tees`) : ""}</p></div></div>
     ${h.display === "ILLUSTRATIVE_3D" ? `<p class="tag demo">${th ? "แบบจำลองประกอบ ลอกจากแผนผังของสมาคม ไม่ใช่ข้อมูลสำรวจ" : "Illustrative model traced from the club's diagram, not surveyed"}</p>` : ""}
     ${h.issues.length ? `<div class="notice warn"><span>${h.issues.map((i) => esc(i[lang] || i.en || i)).join(" ")}</span></div>` : ""}
     <p>${esc(T(h.d))}</p>
     ${h.heritage ? `<p class="heritage-note">${esc(T(h.heritage))}</p>` : ""}
-    ${tees.length ? `<div class="stack" style="gap:8px"><h2 class="label">${th ? "ระยะจากแท่นที (ตามหน้าเว็บของสมาคม)" : "Yardage by tee (club website)"}</h2><div class="yardages">${tees.map((t) => `<div${t.id === sel.id ? ' class="is-sel"' : ""}><span>${th ? "แท่นที" : "Tee"} ${t.id}</span><b>${t.yards != null ? fmt(t.yards) : `<span class="tag warn">${th ? "รอยืนยัน" : "To confirm"}</span>`}</b></div>`).join("")}</div>${state.units === "m" ? `<p class="photo-note">${th ? "แปลงจากหลาของสมาคม ปัดเศษเป็นเมตร" : "Converted from the club's yards, rounded to the metre"}</p>` : ""}</div>` : ""}
+    ${tees.length ? `<div class="stack" style="gap:8px"><h2 class="label">${th ? "ระยะจากแท่นที (ตามสกอร์การ์ดของสมาคม)" : "Yardage by tee (club scorecard)"}</h2><div class="yardages">${tees.map((t) => `<div${t.id === sel.id ? ' class="is-sel"' : ""}><span><i class="tee-dot" style="--tee:${t.color}" aria-hidden="true"></i>${t.name?.[lang] || t.id}</span><b>${t.yards != null ? fmt(t.yards) : `<span class="tag warn">${th ? "รอยืนยัน" : "To confirm"}</span>`}</b></div>`).join("")}</div>${state.units === "m" ? `<p class="photo-note">${th ? "แปลงจากหลาของสมาคม ปัดเศษเป็นเมตร" : "Converted from the club's yards, rounded to the metre"}</p>` : ""}</div>` : ""}
     ${h.features?.length ? `<div class="stack" style="gap:8px"><h2 class="label">${th ? "สิ่งที่เห็นในแผนผัง" : "What the diagram shows"}</h2><ul class="feature-list">${h.features.map((f) => `<li>${esc(FEATURES[f]?.[lang] || f)}</li>`).join("")}</ul></div>` : ""}
     <p class="row"><a class="btn" href="${root}${lang}/tee-times/${html.dataset.target === "artifact" ? "index.html" : ""}">${th ? "จองเวลาออกรอบ" : "Book a tee time"} <span class="arrow" aria-hidden="true">&rarr;</span></a><a class="btn secondary" href="${root}${lang}/scorecard/${html.dataset.target === "artifact" ? "index.html" : ""}#h${h.n}">${th ? "สกอร์การ์ด" : "Scorecard"}</a></p>
     <details class="source"><summary>${th ? "ที่มาและสถานะของข้อมูล" : "Sources and status"}</summary><dl class="kv small"><dt>${th ? "สถานะการผลิต" : "Production"}</dt><dd>${h.status}</dd><dt>${th ? "การแสดงผล" : "Public display"}</dt><dd>${h.display}</dd><dt>${th ? "พาร์" : "Par"}</dt><dd>${th ? "แผนผังของสมาคม" : "Club diagram"}</dd><dt>${th ? "ระยะ" : "Yardages"}</dt><dd>${th ? "ข้อความหน้าหลุมของสมาคม" : "Club hole page text"}</dd><dt>${th ? "ลำดับความยาก" : "Stroke index"}</dt><dd>${th ? "ยังไม่เผยแพร่" : "Not published"}</dd><dt>${th ? "ความสูงต่ำ" : "Elevation"}</dt><dd>${th ? "ไม่มีข้อมูล แสดงเป็นพื้นราบ" : "No data; shown flat"}</dd></dl></details>`;
@@ -55,7 +55,7 @@ function labelFactory(kind, extra) {
   const el = document.createElement("span");
   el.className = `xp-label xp-${kind}`;
   if (kind === "arc") { el.textContent = `${extra.approx ? "≈ " : ""}${extra.yards} ${th ? "หลา" : "yd"}`; if (!extra.main) el.classList.add("is-sub"); return el; }
-  el.textContent = kind === "green" ? (th ? "กลางกรีนตามแผนผัง" : "Green centre (diagram)") : kind === "tee" ? `${th ? "แท่นที" : "Tee"} ${extra}` : kind === "target" ? (th ? "จุดเล็งตามแผนผัง" : "Diagram target") : (th ? "ระยะตีลอย (ประกอบ)" : "Carry (illustrative)");
+  el.textContent = kind === "green" ? (th ? "กลางกรีนตามแผนผัง" : "Green centre (diagram)") : kind === "tee" ? (holeData(state.hole)?.tees.find((x) => x.id === extra)?.name?.[lang] || extra) : kind === "target" ? (th ? "จุดเล็งตามแผนผัง" : "Diagram target") : (th ? "ระยะตีลอย (ประกอบ)" : "Carry (illustrative)");
   if (kind === "carry") el.dataset.carry = "";
   return el;
 }
@@ -94,7 +94,8 @@ async function show3D(h, my) {
   say(th ? `กำลังโหลดแบบจำลองหลุม ${h.n}` : `Loading the hole ${h.n} model`);
   try {
     // Data and picture load together; the current model stays on screen until both are in.
-    const [data, tx] = await Promise.all([holeJSON(h.n), h.clean ? s.texture(h.clean).catch(() => null) : null]);
+    const [full, tx] = await Promise.all([holeJSON(h.n), h.clean ? s.texture(h.clean).catch(() => null) : null]);
+    const data = { ...full, tees: full.tees.filter((t) => h.tees.some((x) => x.id === t.id)) }; // the scorecard's four tees
     if (my !== token) return; // a newer selection won
     s.load(data, { tee: state.tee, carryYards: state.carry, enabled: state.layers, texture: tx || h.clean || h.cut, distances: h.arcs ? { tees: h.tees, approach: h.arcs.approach, approx: h.arcs.approx } : null });
     prefetchNear(h.n);
@@ -180,7 +181,7 @@ async function selectHole(n, { push = false } = {}) {
 
 function renderTees(h) {
   const box = app.querySelector("[data-tees]");
-  box.innerHTML = h.tees.map((t) => `<button type="button" data-tee="${t.id}" aria-pressed="${t.id === state.tee}" title="${t.yards ?? ""}"><span class="shape s${t.id}" aria-hidden="true"></span>${th ? "ที" : "Tee"} ${t.id}</button>`).join("") || `<span class="small muted">${th ? "ไม่มีข้อมูลแท่นที" : "No tee data"}</span>`;
+  box.innerHTML = h.tees.map((t) => `<button type="button" data-tee="${t.id}" aria-pressed="${t.id === state.tee}" title="${t.yards ?? ""}"><i class="tee-dot" style="--tee:${t.color}" aria-hidden="true"></i>${t.name?.[lang] || t.id}</button>`).join("") || `<span class="small muted">${th ? "ไม่มีข้อมูลแท่นที" : "No tee data"}</span>`;
 }
 app.querySelector("[data-tees]").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tee]"); if (!b) return;

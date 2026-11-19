@@ -314,7 +314,8 @@ export class HoleScene {
       const pad = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.4, 7.5), padMat);
       pad.position.copy(this.toWorld(t.x, t.y, ground + 0.2)); pad.rotation.y = ang; pad.castShadow = true; pad.receiveShadow = true; teeGroup.add(pad);
       const side = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang)).multiplyScalar(1.6), front = new THREE.Vector3(Math.sin(ang), 0, Math.cos(ang)).multiplyScalar(2.6);
-      for (const sgn of [-1, 1]) { const mk = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), markMat); mk.position.copy(pad.position).add(side.clone().multiplyScalar(sgn)).add(front).setY(ground + 0.62); mk.castShadow = true; teeGroup.add(mk); }
+      const tc = this.distances?.tees?.find((x) => x.id === t.id)?.color; const mm = tc ? new THREE.MeshStandardMaterial({ color: tc, roughness: 0.45 }) : markMat;
+      for (const sgn of [-1, 1]) { const mk = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), mm); mk.position.copy(pad.position).add(side.clone().multiplyScalar(sgn)).add(front).setY(ground + 0.62); mk.castShadow = true; teeGroup.add(mk); }
       t._world = this.toWorld(t.x, t.y, ground + 0.45);
     }
     this.scene.add(teeGroup); this.layers.tees = teeGroup;

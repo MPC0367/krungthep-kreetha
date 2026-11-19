@@ -71,7 +71,7 @@ function holeViewer(box) {
     const el = document.createElement("span");
     el.className = `xp-label xp-${kind}`;
     if (kind === "arc") { el.textContent = `${extra.approx ? "≈ " : ""}${extra.yards} ${th ? "หลา" : "yd"}`; if (!extra.main) el.classList.add("is-sub"); return el; }
-    el.textContent = kind === "green" ? (th ? "กรีน" : "Green") : kind === "tee" ? `${th ? "แท่นที" : "Tee"} ${extra}` : kind === "target" ? (th ? "จุดเล็ง" : "Target") : "";
+    el.textContent = kind === "green" ? (th ? "กรีน" : "Green") : kind === "tee" ? (cur?.tees.find((x) => x.id === extra)?.name?.[lang] || extra) : kind === "target" ? (th ? "จุดเล็ง" : "Target") : "";
     return kind === "carry" ? null : el;
   };
   const setTop = (on) => { topBtn.setAttribute("aria-pressed", String(on)); box.classList.toggle("is-moved", !on); };
@@ -100,7 +100,8 @@ function holeViewer(box) {
     box.classList.add("is-loading");
     try {
       // The hole's data and its picture load together; the current hole stays on screen until both are in.
-      const [d, tx] = await Promise.all([getData(h), s.texture(h.clean || h.cut).catch(() => null)]);
+      const [full, tx] = await Promise.all([getData(h), s.texture(h.clean || h.cut).catch(() => null)]);
+      const d = { ...full, tees: full.tees.filter((t) => h.tees.some((x) => x.id === t.id)) }; // the scorecard's four tees
       if (my !== token) return;
       s.load(d, { tee: "1", enabled: { labels: true, line: true, carry: false }, texture: tx || h.clean || h.cut, distances: h.arcs ? { tees: h.tees, approach: h.arcs.approach, approx: h.arcs.approx } : null });
       s.preset("top", { instant: true });
@@ -151,7 +152,7 @@ if (rail && stage && data.length) {
   const viewer = holeViewer(stage.querySelector("[data-hv]"));
   viewer.show(data.find((x) => x.n === Number(rail.querySelector('[aria-selected="true"]')?.dataset.hole || 7)));
   const q = (k) => stage.querySelector(`[data-f="${k}"]`);
-  const yards = (h) => h.tees.length ? `<div class="yardages">${h.tees.map((t) => `<div><span>${th ? "แท่นที" : "Tee"} ${t.id}</span><b>${t.yards != null ? `${t.yards} ${th ? "หลา" : "yd"}` : `<span class="tag warn">${th ? "รอยืนยัน" : "To confirm"}</span>`}</b></div>`).join("")}</div>` : `<p class="muted small">${th ? "ระยะยังไม่ได้รับการยืนยัน" : "Yardages not yet confirmed"}</p>`;
+  const yards = (h) => h.tees.length ? `<div class="yardages">${h.tees.map((t) => `<div><span><i class="tee-dot" style="--tee:${t.color}" aria-hidden="true"></i>${t.name?.[lang] || t.id}</span><b>${t.yards != null ? `${t.yards} ${th ? "หลา" : "yd"}` : `<span class="tag warn">${th ? "รอยืนยัน" : "To confirm"}</span>`}</b></div>`).join("")}</div>` : `<p class="muted small">${th ? "ระยะยังไม่ได้รับการยืนยัน" : "Yardages not yet confirmed"}</p>`;
   function select(n, focus) {
     const h = data.find((x) => x.n === n); if (!h) return;
     rail.querySelectorAll("[data-hole]").forEach((b) => { const on = Number(b.dataset.hole) === n; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
