@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tee times | Krungthep Kreetha</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Find a tee time at Krungthep Kreetha. See the price, deposit and places left for every time before you give any details, up to 14 days ahead. Choose yours here.">
+<meta name="description" content="Find a tee time at Krungthep Kreetha. See the price, deposit and places left for every time before you give any details, up to 60 days ahead. Choose yours here.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://www.krungthepkreetha.co.th/en/tee-times/">
 <link rel="alternate" hreflang="th" href="https://www.krungthepkreetha.co.th/th/tee-times/">
@@ -15,7 +15,7 @@
 <link rel="alternate" hreflang="x-default" href="https://www.krungthepkreetha.co.th/th/tee-times/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Tee times | Krungthep Kreetha">
-<meta property="og:description" content="Find a tee time at Krungthep Kreetha. See the price, deposit and places left for every time before you give any details, up to 14 days ahead. Choose yours here.">
+<meta property="og:description" content="Find a tee time at Krungthep Kreetha. See the price, deposit and places left for every time before you give any details, up to 60 days ahead. Choose yours here.">
 <meta property="og:image" content="https://www.krungthepkreetha.co.th/img/hero-aerial-og.jpg">
 <meta property="og:locale" content="en_GB">
 <meta name="theme-color" content="#152A24">
@@ -61,43 +61,48 @@
   </div>
 </section>
 <section class="section-tight" style="padding-top:0">
-  <div class="wrap tt-layout" data-teetimes>
-    <div>
-      <form class="tt-search" data-search onsubmit="return false">
-        <fieldset><legend id="date-legend">Playing date</legend><div class="date-strip" data-dates role="radiogroup" aria-labelledby="date-legend"><div class="skeleton" style="height:64px;grid-column:span 7"></div></div></fieldset>
-        <div class="row">
-          <div class="field"><span class="label" id="g-label">Golfers</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="Fewer golfers">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="More golfers">+</button></div></div>
-          <fieldset><legend>Who is playing</legend><div class="seg" role="radiogroup" data-category>
-            <label><input type="radio" name="category" value="visitor" checked><span>Visitor</span></label>
-            <label><input type="radio" name="category" value="member_guest"><span>Member's guest</span></label>
-            <label><input type="radio" name="category" value="member"><span>Member</span></label>
-          </div></fieldset>
-        </div>
-        <div class="member-row" data-member hidden>
-          <div class="field"><label for="member-no">Member number</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">Demo: try D-0001 (active) or D-0002 (suspended)</span></div>
-          <button class="btn secondary" type="button" data-verify>Check membership</button>
-        </div>
-        <p class="small muted" data-category-note hidden></p>
-      </form>
-      <div class="results-head"><h2 data-results-title aria-live="polite">Loading tee times</h2><span class="legend small muted" aria-hidden="true"><span><i></i>Free</span><span><i class="taken"></i>Booked</span><span>Bangkok time</span></span></div>
-      <div data-results aria-busy="true">
-        <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
-        <noscript><div class="notice warn"><span>Tee-time search needs JavaScript. Please call 0-2736-0378-9 to book.</span></div></noscript>
+  <div class="wrap" data-teetimes>
+    <form class="tt-search" data-search onsubmit="return false">
+      <div class="tt-bar">
+        <div class="field tt-date"><span class="label" id="date-legend">Playing date</span>
+          <button type="button" class="date-btn" data-date-btn aria-haspopup="dialog" aria-expanded="false" aria-labelledby="date-legend date-value"><span class="dv" id="date-value" data-date-value><span class="skeleton" style="display:inline-block;width:9em;height:1em"></span></span><svg class="cal-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></button></div>
+        <div class="field"><span class="label" id="g-label">Golfers</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="Fewer golfers">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="More golfers">+</button></div></div>
+        <fieldset class="tt-cat"><legend>Who is playing</legend><div class="seg" role="radiogroup" data-category>
+          <label><input type="radio" name="category" value="visitor" checked><span>Visitor</span></label>
+          <label><input type="radio" name="category" value="member_guest"><span>Member's guest</span></label>
+          <label><input type="radio" name="category" value="member"><span>Member</span></label>
+        </div></fieldset>
       </div>
+      <div class="tt-quick"><div class="date-strip" data-dates role="radiogroup" aria-label="Nearby dates"></div><button type="button" class="link-btn" data-view-cal aria-haspopup="dialog">View the month calendar</button></div>
+      <div class="member-row" data-member hidden>
+        <div class="field"><label for="member-no">Member number</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">Demo: try D-0001 (active) or D-0002 (suspended)</span></div>
+        <button class="btn secondary" type="button" data-verify>Check membership</button>
+      </div>
+      <p class="small muted" data-category-note hidden></p>
+    </form>
+    <div class="tt-layout">
+      <div>
+        <div class="results-head"><h2 data-results-title aria-live="polite">Loading tee times</h2><span class="legend small muted" aria-hidden="true"><span><i></i>Free</span><span><i class="taken"></i>Booked</span><span>Bangkok time</span></span></div>
+        <p class="tt-deposit small" data-day-deposit></p>
+        <div data-results aria-busy="true">
+          <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
+          <noscript><div class="notice warn"><span>Tee-time search needs JavaScript. Please call 0-2736-0378-9 to book.</span></div></noscript>
+        </div>
+      </div>
+      <aside class="summary" data-summary aria-labelledby="sum-title">
+        <h2 id="sum-title">Your selection</h2>
+        <div data-summary-body><p class="muted small">Pick a time from the list. We hold it for you for 10 minutes while you add your details.</p></div>
+      </aside>
     </div>
-    <aside class="summary" data-summary aria-labelledby="sum-title">
-      <h2 id="sum-title">Your selection</h2>
-      <div data-summary-body><p class="muted small">Pick a time from the list. We hold it for you for 10 minutes while you add your details.</p></div>
-    </aside>
   </div>
   <div class="mobile-summary" data-mobile-summary hidden><span data-ms-text></span><a class="btn light small" data-ms-go href="../../en/booking/details/index.html">Continue <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
 </section>
 <section class="section paper" aria-labelledby="how-title">
   <div class="wrap">
-    <div class="section-head"><h2 class="h2" id="how-title">How online booking works</h2><p class="lead">The terms below are examples awaiting the committee's approval, except the THB 500 deposit credited toward the green fee, which comes from the club's own poster.</p></div>
+    <div class="section-head"><h2 class="h2" id="how-title">How online booking works</h2><p class="lead">The terms below are examples awaiting the committee's approval. The THB 500 credited toward the green fee comes from the club's poster; the advance deposit is a demo assumption.</p></div>
     <ol class="how-steps">
       <li><b>A 10-minute hold</b><span class="small muted">Choosing a time holds the places so nobody else can take them meanwhile.</span></li>
-      <li><b>THB 500 deposit per golfer</b><span class="small muted">Credited toward the green fee when you play; the balance is paid at the club.</span></li>
+      <li><b>Demo deposit THB 500 per golfer, or THB 250 per golfer from 8 days ahead</b><span class="small muted">Counted in Bangkok calendar days from the day you hold the time. Credited toward the green fee; the balance is paid at the club.</span></li>
       <li><b>Cancel 48 hours ahead for a refund</b><span class="small muted">After that the deposit is kept as the cancellation fee (example value).</span></li>
       <li><b>No-show</b><span class="small muted">If nobody arrives within 30 minutes of the tee time, the paid deposit is kept. Nothing more is charged.</span></li>
     </ol>

@@ -22,14 +22,15 @@ function httpAdapter() {
     if (!r.ok) throw new ApiError(body.error || { code: "ERROR", message: `HTTP ${r.status}` });
     return body;
   };
-  const staff = new Set(["staffTeeSheet", "staffCreateBooking", "staffCheckIn", "staffNoShow", "staffCorrectAttendance", "staffCancel", "staffMove", "staffRefund", "staffSettleRefunds", "staffCloseSlots", "staffReopen", "listExceptions", "resolveException", "auditLog", "draftReading", "publishReading", "correctReading", "withdrawReading", "setCourseStatus", "addNotice", "removeNotice", "listReadings", "syncHealth", "syncImport", "syncExport", "resolveConflict", "setSimulation", "setClockOffset", "deliverQueuedEvents"]);
+  const staff = new Set(["staffTeeSheet", "staffFindBooking", "staffCreateBooking", "staffCheckIn", "staffNoShow", "staffCorrectAttendance", "staffCancel", "staffMove", "staffRefund", "staffSettleRefunds", "staffCloseSlots", "staffReopen", "listExceptions", "resolveException", "auditLog", "draftReading", "publishReading", "correctReading", "withdrawReading", "setCourseStatus", "addNotice", "removeNotice", "listReadings", "syncHealth", "syncImport", "syncExport", "resolveConflict", "setSimulation", "setClockOffset", "deliverQueuedEvents"]);
   const api = {
     kind: "server",
     subscribe(channel, cb) {
       if (!es && "EventSource" in window) { es = new EventSource(`${root}api/events`); }
-      (handlers[channel] ||= []).push(cb);
-      es?.addEventListener(channel, (e) => cb(JSON.parse(e.data || "{}")));
-      return () => {};
+      const fn = (e) => cb(JSON.parse(e.data || "{}"));
+      (handlers[channel] ||= []).push(fn);
+      es?.addEventListener(channel, fn);
+      return () => { es?.removeEventListener(channel, fn); handlers[channel] = (handlers[channel] || []).filter((x) => x !== fn); };
     },
     async staffLogin(userId) { const r = await fetch(`${root}api/staff/session`, { method: "POST", headers: { "x-kk-csrf": "1", "content-type": "application/json" }, body: JSON.stringify({ userId }), credentials: "same-origin" }); const b = await r.json(); if (!r.ok) throw new ApiError(b.error); return b.user; },
     async staffSession() { const r = await fetch(`${root}api/staff/session`, { credentials: "same-origin" }); return (await r.json()).user; },

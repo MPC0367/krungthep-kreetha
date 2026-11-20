@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>スタート時間 | Krungthep Kreetha</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Krungthep Kreethaのスタート時間を検索。14日先まで、お客様情報を入力する前に各時間の料金、デポジット、残り枠をご確認いただけます。こちらからお選びください。">
+<meta name="description" content="Krungthep Kreetha のティータイムを探しましょう。情報を入力する前に、各時間の料金、デポジット、残り枠を確認できます。最大 60 日先まで。ここでお選びください。">
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://www.krungthepkreetha.co.th/ja/tee-times/">
 <link rel="alternate" hreflang="th" href="https://www.krungthepkreetha.co.th/th/tee-times/">
@@ -15,7 +15,7 @@
 <link rel="alternate" hreflang="x-default" href="https://www.krungthepkreetha.co.th/th/tee-times/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="スタート時間 | Krungthep Kreetha">
-<meta property="og:description" content="Krungthep Kreethaのスタート時間を検索。14日先まで、お客様情報を入力する前に各時間の料金、デポジット、残り枠をご確認いただけます。こちらからお選びください。">
+<meta property="og:description" content="Krungthep Kreetha のティータイムを探しましょう。情報を入力する前に、各時間の料金、デポジット、残り枠を確認できます。最大 60 日先まで。ここでお選びください。">
 <meta property="og:image" content="https://www.krungthepkreetha.co.th/img/hero-aerial-og.jpg">
 <meta property="og:locale" content="ja_JP">
 <meta name="theme-color" content="#152A24">
@@ -62,43 +62,48 @@
   </div>
 </section>
 <section class="section-tight" style="padding-top:0">
-  <div class="wrap tt-layout" data-teetimes>
-    <div>
-      <form class="tt-search" data-search onsubmit="return false">
-        <fieldset><legend id="date-legend">プレー日</legend><div class="date-strip" data-dates role="radiogroup" aria-labelledby="date-legend"><div class="skeleton" style="height:64px;grid-column:span 7"></div></div></fieldset>
-        <div class="row">
-          <div class="field"><span class="label" id="g-label">人数</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="人数を減らす">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="人数を増やす">+</button></div></div>
-          <fieldset><legend>プレーされる方</legend><div class="seg" role="radiogroup" data-category>
-            <label><input type="radio" name="category" value="visitor" checked><span>ビジター</span></label>
-            <label><input type="radio" name="category" value="member_guest"><span>会員同伴のゲスト</span></label>
-            <label><input type="radio" name="category" value="member"><span>会員</span></label>
-          </div></fieldset>
-        </div>
-        <div class="member-row" data-member hidden>
-          <div class="field"><label for="member-no">会員番号</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">デモ：D-0001（有効）またはD-0002（停止中）をお試しください</span></div>
-          <button class="btn secondary" type="button" data-verify>会員資格を確認</button>
-        </div>
-        <p class="small muted" data-category-note hidden></p>
-      </form>
-      <div class="results-head"><h2 data-results-title aria-live="polite">スタート時間を読み込み中</h2><span class="legend small muted" aria-hidden="true"><span><i></i>空き</span><span><i class="taken"></i>予約済み</span><span>バンコク時間</span></span></div>
-      <div data-results aria-busy="true">
-        <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
-        <noscript><div class="notice warn"><span>スタート時間の検索にはJavaScriptが必要です。ご予約は0-2736-0378-9までお電話ください。</span></div></noscript>
+  <div class="wrap" data-teetimes>
+    <form class="tt-search" data-search onsubmit="return false">
+      <div class="tt-bar">
+        <div class="field tt-date"><span class="label" id="date-legend">プレー日</span>
+          <button type="button" class="date-btn" data-date-btn aria-haspopup="dialog" aria-expanded="false" aria-labelledby="date-legend date-value"><span class="dv" id="date-value" data-date-value><span class="skeleton" style="display:inline-block;width:9em;height:1em"></span></span><svg class="cal-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></button></div>
+        <div class="field"><span class="label" id="g-label">人数</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="人数を減らす">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="人数を増やす">+</button></div></div>
+        <fieldset class="tt-cat"><legend>プレーされる方</legend><div class="seg" role="radiogroup" data-category>
+          <label><input type="radio" name="category" value="visitor" checked><span>ビジター</span></label>
+          <label><input type="radio" name="category" value="member_guest"><span>会員同伴のゲスト</span></label>
+          <label><input type="radio" name="category" value="member"><span>会員</span></label>
+        </div></fieldset>
       </div>
+      <div class="tt-quick"><div class="date-strip" data-dates role="radiogroup" aria-label="近い日付"></div><button type="button" class="link-btn" data-view-cal aria-haspopup="dialog">月のカレンダーを見る</button></div>
+      <div class="member-row" data-member hidden>
+        <div class="field"><label for="member-no">会員番号</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">デモ：D-0001（有効）またはD-0002（停止中）をお試しください</span></div>
+        <button class="btn secondary" type="button" data-verify>会員資格を確認</button>
+      </div>
+      <p class="small muted" data-category-note hidden></p>
+    </form>
+    <div class="tt-layout">
+      <div>
+        <div class="results-head"><h2 data-results-title aria-live="polite">スタート時間を読み込み中</h2><span class="legend small muted" aria-hidden="true"><span><i></i>空き</span><span><i class="taken"></i>予約済み</span><span>バンコク時間</span></span></div>
+        <p class="tt-deposit small" data-day-deposit></p>
+        <div data-results aria-busy="true">
+          <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
+          <noscript><div class="notice warn"><span>スタート時間の検索にはJavaScriptが必要です。ご予約は0-2736-0378-9までお電話ください。</span></div></noscript>
+        </div>
+      </div>
+      <aside class="summary" data-summary aria-labelledby="sum-title">
+        <h2 id="sum-title">選択内容</h2>
+        <div data-summary-body><p class="muted small">一覧から時間をお選びください。お客様情報をご入力いただく間、10分間仮押さえします。</p></div>
+      </aside>
     </div>
-    <aside class="summary" data-summary aria-labelledby="sum-title">
-      <h2 id="sum-title">選択内容</h2>
-      <div data-summary-body><p class="muted small">一覧から時間をお選びください。お客様情報をご入力いただく間、10分間仮押さえします。</p></div>
-    </aside>
   </div>
   <div class="mobile-summary" data-mobile-summary hidden><span data-ms-text></span><a class="btn light small" data-ms-go href="../../ja/booking/details/index.html">次へ <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
 </section>
 <section class="section paper" aria-labelledby="how-title">
   <div class="wrap">
-    <div class="section-head"><h2 class="h2" id="how-title">オンライン予約の流れ</h2><p class="lead">以下の規約は、グリーンフィーに充当される500バーツのデポジット（クラブのポスターに記載）を除き、委員会の承認待ちの例示です。</p></div>
+    <div class="section-head"><h2 class="h2" id="how-title">オンライン予約の流れ</h2><p class="lead">以下の条件は委員会の承認待ちの例です。グリーンフィーに充当される 500 バーツはクラブのポスターによるもので、早期予約のデポジットはデモ上の仮定です。</p></div>
     <ol class="how-steps">
       <li><b>10分間の仮押さえ</b><span class="small muted">時間を選択すると枠が仮押さえされ、その間はほかの方が予約できなくなります。</span></li>
-      <li><b>お一人様500バーツのデポジット</b><span class="small muted">プレー当日にグリーンフィーへ充当され、残額はクラブでお支払いいただきます。</span></li>
+      <li><b>デモのデポジットは 1 名 500 バーツ、8 日以上前の予約は 1 名 250 バーツ</b><span class="small muted">時間を確保した日からバンコクの暦日で数えます。グリーンフィーに充当され、残額はクラブでお支払いください。</span></li>
       <li><b>48時間前までのキャンセルで返金</b><span class="small muted">それ以降は、デポジットをキャンセル料として申し受けます（例示の値）。</span></li>
       <li><b>ノーショー</b><span class="small muted">スタート時間から30分以内にどなたもご来場されない場合、お支払い済みのデポジットは返金されません。それ以上の請求はありません。</span></li>
     </ol>

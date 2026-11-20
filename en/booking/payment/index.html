@@ -61,29 +61,33 @@
       <h1 class="h1">Pay the deposit</h1>
       <div data-flow-missing hidden class="empty-state"><b>We could not find this booking</b><a class="btn" href="../../../en/tee-times/index.html">Choose a time <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
       <div class="panel" data-pay-panel>
-        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">Payment method</legend>
+        <div class="notice demo"><span>Demo only. No money is collected.</span></div>
+        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">Simulated payment method</legend>
           <div class="pay-methods">
-            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay QR</b><span class="small muted">Scan with any Thai banking app. The QR belongs to this payment only.</span></label>
-            <label class="pay-method"><input type="radio" name="method" value="card"><b>Credit or debit card</b><span class="small muted">Entered on the payment provider's page. This site never sees card numbers.</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay QR</b><span class="small muted">The live system shows a QR for your banking app. Here the QR is an illustration that cannot be scanned; use the button below instead.</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="card"><b>Credit or debit card</b><span class="small muted">The live system takes the card on the provider's page. This demo asks for no card details.</span></label>
           </div>
         </fieldset>
-        <p class="row"><button class="btn" type="button" data-start-pay>Create the payment</button></p>
+        <p class="row"><button class="btn" type="button" data-pay-sim>Simulate the deposit</button></p>
+        <p class="small muted">This creates a sandbox payment request and sends a success event in place of the provider. The booking is confirmed only after the system verifies that event.</p>
+        <div data-pay-note></div>
         <div data-pay-live hidden class="stack" style="gap:16px">
-          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status>Waiting for payment</b><p class="small muted" data-pay-expiry></p></div></div>
-          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="Sandbox QR, cannot be scanned"></div><div class="stack small" style="max-width:32em"><p>We confirm only when the payment provider tells us the money has settled. A button press or an uploaded slip does not count.</p><p class="muted">This page updates by itself when the status changes.</p></div></div>
+          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status aria-live="polite"></b><p class="small muted" data-pay-expiry></p></div></div>
+          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="Sandbox illustration, cannot be scanned"></div><div class="stack small" style="max-width:32em"><p>We confirm only when the payment provider tells us the money has settled. A button press or an uploaded slip does not count.</p><p class="muted">This page updates by itself. Refreshing resumes the same request; it never creates a second one.</p></div></div>
         </div>
       </div>
-      <div class="sandbox" data-sandbox hidden>
-        <h3>Sandbox controls, standing in for your banking app (demo only)</h3>
+      <details class="sandbox" data-sandbox>
+        <summary>Test other outcomes (demo only)</summary>
+        <p class="small">These stand in for the payment provider's other results.</p>
         <div class="row">
-          <button class="btn small" type="button" data-act="succeed">Pay successfully</button>
+          <button class="btn small" type="button" data-act="pending" data-start-pay>Create the request and wait</button>
           <button class="btn small" type="button" data-act="fail">Payment fails</button>
-          <button class="btn small" type="button" data-act="expire">Let the QR expire</button>
+          <button class="btn small" type="button" data-act="expire">Let the request expire</button>
           <button class="btn small" type="button" data-act="twice">Provider sends the event twice</button>
           <button class="btn small" type="button" data-act="later">Pay late, after the hold ends</button>
         </div>
         <p class="small" data-sandbox-log aria-live="polite"></p>
-      </div>
+      </details>
     </div>
     <aside class="summary" data-summary><h2>Booking summary</h2><div data-summary-body><div class="skeleton" style="height:180px"></div></div></aside>
   </div>

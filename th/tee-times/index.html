@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>จองเวลาออกรอบ | กรุงเทพกรีฑา</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="ค้นหาเวลาออกรอบที่สนามกอล์ฟกรุงเทพกรีฑา ดูราคา มัดจำ และจำนวนที่ว่างของแต่ละเวลา ก่อนกรอกข้อมูล ล่วงหน้าได้ 14 วัน เลือกเวลาของคุณได้ที่นี่">
+<meta name="description" content="ค้นหาเวลาออกรอบที่สนามกอล์ฟกรุงเทพกรีฑา ดูราคา มัดจำ และจำนวนที่ว่างของแต่ละเวลา ก่อนกรอกข้อมูล ล่วงหน้าได้ 60 วัน เลือกเวลาของคุณได้ที่นี่">
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://www.krungthepkreetha.co.th/th/tee-times/">
 <link rel="alternate" hreflang="th" href="https://www.krungthepkreetha.co.th/th/tee-times/">
@@ -15,7 +15,7 @@
 <link rel="alternate" hreflang="x-default" href="https://www.krungthepkreetha.co.th/th/tee-times/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="จองเวลาออกรอบ | กรุงเทพกรีฑา">
-<meta property="og:description" content="ค้นหาเวลาออกรอบที่สนามกอล์ฟกรุงเทพกรีฑา ดูราคา มัดจำ และจำนวนที่ว่างของแต่ละเวลา ก่อนกรอกข้อมูล ล่วงหน้าได้ 14 วัน เลือกเวลาของคุณได้ที่นี่">
+<meta property="og:description" content="ค้นหาเวลาออกรอบที่สนามกอล์ฟกรุงเทพกรีฑา ดูราคา มัดจำ และจำนวนที่ว่างของแต่ละเวลา ก่อนกรอกข้อมูล ล่วงหน้าได้ 60 วัน เลือกเวลาของคุณได้ที่นี่">
 <meta property="og:image" content="https://www.krungthepkreetha.co.th/img/hero-aerial-og.jpg">
 <meta property="og:locale" content="th_TH">
 <meta name="theme-color" content="#152A24">
@@ -61,43 +61,48 @@
   </div>
 </section>
 <section class="section-tight" style="padding-top:0">
-  <div class="wrap tt-layout" data-teetimes>
-    <div>
-      <form class="tt-search" data-search onsubmit="return false">
-        <fieldset><legend id="date-legend">วันที่เล่น</legend><div class="date-strip" data-dates role="radiogroup" aria-labelledby="date-legend"><div class="skeleton" style="height:64px;grid-column:span 7"></div></div></fieldset>
-        <div class="row">
-          <div class="field"><span class="label" id="g-label">จำนวนนักกอล์ฟ</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="ลดจำนวน">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>
-          <fieldset><legend>ผู้เล่น</legend><div class="seg" role="radiogroup" data-category>
-            <label><input type="radio" name="category" value="visitor" checked><span>นักกอล์ฟทั่วไป</span></label>
-            <label><input type="radio" name="category" value="member_guest"><span>แขกของสมาชิก</span></label>
-            <label><input type="radio" name="category" value="member"><span>สมาชิก</span></label>
-          </div></fieldset>
-        </div>
-        <div class="member-row" data-member hidden>
-          <div class="field"><label for="member-no">หมายเลขสมาชิก</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">ระบบตัวอย่าง: ลอง D-0001 (ใช้งานได้) หรือ D-0002 (ระงับ)</span></div>
-          <button class="btn secondary" type="button" data-verify>ตรวจสอบสิทธิ์</button>
-        </div>
-        <p class="small muted" data-category-note hidden></p>
-      </form>
-      <div class="results-head"><h2 data-results-title aria-live="polite">กำลังโหลดเวลาที่ว่าง</h2><span class="legend small muted" aria-hidden="true"><span><i></i>ว่าง</span><span><i class="taken"></i>จองแล้ว</span><span>เวลากรุงเทพฯ</span></span></div>
-      <div data-results aria-busy="true">
-        <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
-        <noscript><div class="notice warn"><span>การค้นหาเวลาออกรอบต้องใช้ JavaScript กรุณาโทรจองที่ 0-2736-0378-9</span></div></noscript>
+  <div class="wrap" data-teetimes>
+    <form class="tt-search" data-search onsubmit="return false">
+      <div class="tt-bar">
+        <div class="field tt-date"><span class="label" id="date-legend">วันที่เล่น</span>
+          <button type="button" class="date-btn" data-date-btn aria-haspopup="dialog" aria-expanded="false" aria-labelledby="date-legend date-value"><span class="dv" id="date-value" data-date-value><span class="skeleton" style="display:inline-block;width:9em;height:1em"></span></span><svg class="cal-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></button></div>
+        <div class="field"><span class="label" id="g-label">จำนวนนักกอล์ฟ</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="ลดจำนวน">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>
+        <fieldset class="tt-cat"><legend>ผู้เล่น</legend><div class="seg" role="radiogroup" data-category>
+          <label><input type="radio" name="category" value="visitor" checked><span>นักกอล์ฟทั่วไป</span></label>
+          <label><input type="radio" name="category" value="member_guest"><span>แขกของสมาชิก</span></label>
+          <label><input type="radio" name="category" value="member"><span>สมาชิก</span></label>
+        </div></fieldset>
       </div>
+      <div class="tt-quick"><div class="date-strip" data-dates role="radiogroup" aria-label="เลือกวันใกล้เคียง"></div><button type="button" class="link-btn" data-view-cal aria-haspopup="dialog">ดูปฏิทินทั้งเดือน</button></div>
+      <div class="member-row" data-member hidden>
+        <div class="field"><label for="member-no">หมายเลขสมาชิก</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">ระบบตัวอย่าง: ลอง D-0001 (ใช้งานได้) หรือ D-0002 (ระงับ)</span></div>
+        <button class="btn secondary" type="button" data-verify>ตรวจสอบสิทธิ์</button>
+      </div>
+      <p class="small muted" data-category-note hidden></p>
+    </form>
+    <div class="tt-layout">
+      <div>
+        <div class="results-head"><h2 data-results-title aria-live="polite">กำลังโหลดเวลาที่ว่าง</h2><span class="legend small muted" aria-hidden="true"><span><i></i>ว่าง</span><span><i class="taken"></i>จองแล้ว</span><span>เวลากรุงเทพฯ</span></span></div>
+        <p class="tt-deposit small" data-day-deposit></p>
+        <div data-results aria-busy="true">
+          <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
+          <noscript><div class="notice warn"><span>การค้นหาเวลาออกรอบต้องใช้ JavaScript กรุณาโทรจองที่ 0-2736-0378-9</span></div></noscript>
+        </div>
+      </div>
+      <aside class="summary" data-summary aria-labelledby="sum-title">
+        <h2 id="sum-title">เวลาที่คุณเลือก</h2>
+        <div data-summary-body><p class="muted small">เลือกเวลาจากรายการ ระบบจะกันเวลานั้นไว้ให้คุณ 10 นาทีระหว่างกรอกข้อมูล</p></div>
+      </aside>
     </div>
-    <aside class="summary" data-summary aria-labelledby="sum-title">
-      <h2 id="sum-title">เวลาที่คุณเลือก</h2>
-      <div data-summary-body><p class="muted small">เลือกเวลาจากรายการ ระบบจะกันเวลานั้นไว้ให้คุณ 10 นาทีระหว่างกรอกข้อมูล</p></div>
-    </aside>
   </div>
   <div class="mobile-summary" data-mobile-summary hidden><span data-ms-text></span><a class="btn light small" data-ms-go href="../../th/booking/details/index.html">ดำเนินการต่อ <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
 </section>
 <section class="section paper" aria-labelledby="how-title">
   <div class="wrap">
-    <div class="section-head"><h2 class="h2" id="how-title">จองออนไลน์ทำงานอย่างไร</h2><p class="lead">เงื่อนไขด้านล่างเป็นค่าตัวอย่างระหว่างรอคณะกรรมการอนุมัติ ยกเว้นมัดจำ 500 บาทที่หักจากค่ากรีนฟี ซึ่งมาจากโปสเตอร์ของสมาคม</p></div>
+    <div class="section-head"><h2 class="h2" id="how-title">จองออนไลน์ทำงานอย่างไร</h2><p class="lead">เงื่อนไขด้านล่างเป็นค่าตัวอย่างระหว่างรอคณะกรรมการอนุมัติ จำนวน 500 บาทที่หักจากค่ากรีนฟีมาจากโปสเตอร์ของสมาคม ส่วนมัดจำจองล่วงหน้าเป็นสมมติฐานของเดโม</p></div>
     <ol class="how-steps">
       <li><b>กันเวลา 10 นาที</b><span class="small muted">เมื่อเลือกเวลา ระบบกันที่ไว้ให้ ไม่มีใครจองซ้อนได้ระหว่างนั้น</span></li>
-      <li><b>มัดจำ 500 บาทต่อท่าน</b><span class="small muted">หักจากค่ากรีนฟีเมื่อมาเล่น ส่วนที่เหลือชำระที่สนาม</span></li>
+      <li><b>มัดจำในเดโม 500 บาท ต่อท่าน หรือ 250 บาท ต่อท่านเมื่อจองล่วงหน้า 8 วันขึ้นไป</b><span class="small muted">นับวันตามปฏิทินกรุงเทพฯ จากวันที่กันเวลา หักจากค่ากรีนฟีเมื่อมาเล่น ส่วนที่เหลือชำระที่สนาม</span></li>
       <li><b>ยกเลิกก่อน 48 ชั่วโมง คืนมัดจำ</b><span class="small muted">หลังจากนั้นสมาคมเก็บมัดจำไว้เป็นค่าธรรมเนียมการยกเลิก (ค่าตัวอย่าง)</span></li>
       <li><b>ไม่มาตามนัด</b><span class="small muted">หากไม่มาภายใน 30 นาทีหลังเวลาออกรอบ มัดจำที่จ่ายแล้วถูกเก็บไว้ ไม่มีการเรียกเก็บเพิ่ม</span></li>
     </ol>

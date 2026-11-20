@@ -19,6 +19,27 @@ export { formatClock, formatDateTime };
 export const CAT = { visitor: { th: "นักกอล์ฟทั่วไป", en: "Visitor" }, member_guest: { th: "แขกของสมาชิก", en: "Member's guest" }, member: { th: "สมาชิก", en: "Member" } };
 export const SESSION = { morning: { th: "รอบเช้า", en: "Morning" }, afternoon: { th: "รอบบ่าย", en: "Afternoon" }, twilight: { th: "ทไวไลท์", en: "Twilight" } };
 export const teeName = (t) => (th ? `แท่นที ${t}` : t === "10" ? "10th tee" : "1st tee");
+const golfersText = (n) => (th ? `${n} ท่าน` : `${n} golfer${n > 1 ? "s" : ""}`);
+
+/** "Advance demo deposit, THB 250 per golfer", from the quote's own stored breakdown (Phase 2, B02/B07). */
+export function depositText(q) {
+  if (!q) return "";
+  if (q.priceMode === "member_account") return th ? "บัญชีสมาชิก ไม่ต้องมัดจำออนไลน์" : "Member account, no online deposit";
+  const dep = q.deposit;
+  if (!dep) return th ? `มัดจำ ${money(q.depositMinor)}` : `Deposit ${money(q.depositMinor)}`; // a booking made before the tiers
+  const unit = money(dep.unitMinor);
+  const basis = dep.basis === "per_booking" ? (th ? `${unit} ต่อการจอง` : `${unit} per booking`) : (th ? `${unit} ต่อท่าน` : `${unit} per golfer`);
+  return dep.tier === "advance" ? (th ? `มัดจำจองล่วงหน้า (ค่าตัวอย่าง) ${basis}` : `Advance demo deposit, ${basis}`) : (th ? `มัดจำ (ค่าตัวอย่าง) ${basis}` : `Demo deposit, ${basis}`);
+}
+export function dueNowText(q, golfers) {
+  if (!q || q.priceMode === "member_account") return "";
+  return th ? `สำหรับ ${golfers} ท่าน ชำระมัดจำตอนนี้ ${money(q.depositMinor)}` : `For ${golfersText(golfers)}, ${money(q.depositMinor)} is due now`;
+}
+/** "For 2 golfers, THB 500 is due now and THB 7,700 is due at the club." */
+export function splitText(q, golfers) {
+  if (!q || q.priceMode === "member_account" || q.totalMinor == null) return "";
+  return th ? `สำหรับ ${golfers} ท่าน ชำระตอนนี้ ${money(q.depositMinor)} และชำระที่สนาม ${money(q.balanceMinor)}` : `For ${golfersText(golfers)}, ${money(q.depositMinor)} is due now and ${money(q.balanceMinor)} is due at the club.`;
+}
 
 export const flow = {
   get() { try { return JSON.parse(sessionStorage.getItem("kk.flow") || "null"); } catch { return null; } },
@@ -90,7 +111,7 @@ export function summaryHTML({ date, time: t, tee, partySize, category, quote, po
     <div><span>${th ? "ยอดคงเหลือ ชำระที่สนาม" : "Balance, paid at the club"}</span><span>${money(quote.balanceMinor)}</span></div>
   </div>
   ${quote.includes ? `<p class="small muted">${th ? "รวมกรีนฟี แคดดี้ และรถกอล์ฟ" : "Includes green fee, caddie and cart"}</p>` : `<p class="small muted">${th ? "โปสเตอร์ไม่ได้ระบุว่าราคานี้รวมอะไรบ้าง สอบถามสมาคมได้" : "The poster does not say what this price includes; ask the club."}</p>`}
-  ${quote.depositMinor ? `<p class="small muted">${th ? "มัดจำในระบบตัวอย่าง หักเป็นส่วนหนึ่งของกรีนฟีตามโปสเตอร์ของสมาคม วิธีเรียกเก็บจริงรอสมาคมยืนยัน" : "Demo deposit, credited to the green fee as the club's poster says. How the club charges it is still to be confirmed."}</p>` : ""}`}
+  ${quote.depositMinor ? `<p class="small dep-basis"><span>${depositText(quote)}</span>. <span>${splitText(quote, partySize)}</span></p><p class="small muted">${th ? "หักจากค่ากรีนฟีเมื่อมาเล่น ราคาแพ็กเกจไม่เปลี่ยน วิธีเรียกเก็บจริงรอสมาคมยืนยัน" : "Credited toward the green fee; the package price does not change. How the club charges deposits is still to be confirmed."}</p>` : ""}`}
   <p class="small">${passed ? (th ? "เลยกำหนดยกเลิกฟรีของเวลานี้แล้ว ตามเงื่อนไขตัวอย่าง หากยกเลิก สมาคมเก็บมัดจำไว้ และไม่เรียกเก็บเพิ่ม" : "Free cancellation has already passed for this time. Under the demo terms, if you cancel, the club keeps the deposit and charges nothing more.") : th ? `ยกเลิกฟรีก่อน ${formatDateTime(deadline, lang)}` : `Free cancellation until ${formatDateTime(deadline, lang)}`}</p>
   <details class="demo-ids"><summary class="photo-note">${th ? "รหัสอัตราและนโยบาย (ค่าตัวอย่าง)" : "Rate and policy versions (demo)"}</summary><p class="photo-note">${th ? `อัตรา ${quote?.rateVersion} นโยบาย ${quote?.policyVersion}` : `Rate ${quote?.rateVersion}, policy ${quote?.policyVersion}`}</p></details>`;
 }

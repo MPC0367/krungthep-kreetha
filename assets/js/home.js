@@ -1,64 +1,86 @@
 // Homepage: the booking dock, the hole rail and stage, and the facilities index.
-import { getApi } from "./api.js";
+import { getApi, clientId } from "./api.js";
 import { addDays, bkkDate, dayKey, formatDate } from "./core/util.js";
+import { createPicker, onBangkokMidnight } from "./datepicker.js";
 
 const lang = document.documentElement.lang === "th" ? "th" : "en";
 const th = lang === "th";
 const pad2 = (n) => String(n).padStart(2, "0");
+// Reduced motion (OS) or the site's Pause motion, read at the moment of each interaction (S03).
+const motionOff = () => matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("is-paused");
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-// ---- Booking dock: seven date chips, golfers stepper, hand-off to the tee-time page.
+// ---- Finder: playing date (the shared calendar), golfers and golfer type, handed to the tee sheet.
+// Without JavaScript the native date field and the form's GET still reach the tee sheet.
 const dock = document.querySelector("[data-dock]");
-if (dock) {
-  const today = bkkDate(Date.now());
+if (dock) finder(dock);
+async function finder(dock) {
   const input = dock.querySelector("#dock-date");
+  const btn = dock.querySelector("[data-date-btn]");
   const golfers = dock.querySelector('input[name="golfers"]');
   const out = dock.querySelector("[data-golfers]");
-  let date = addDays(today, 1);
-  if (dayKey(date) === "mon") date = addDays(date, 1);
-  input.value = date; input.min = today; input.max = addDays(today, 13);
-  const wrap = dock.querySelector("[data-dock-dates]");
+  const catSel = dock.querySelector("[data-dock-category]");
+  const quick = dock.querySelector("[data-dock-quick]");
+  let saved = {}; try { saved = JSON.parse(sessionStorage.getItem("kk.search") || "{}"); } catch {}
+  const st = { date: null, golfers: Math.min(4, Math.max(1, Number(saved.golfers) || 2)), category: ["visitor", "member_guest", "member"].includes(saved.category) ? saved.category : "visitor" };
+  let api, cfg;
+  try { api = await getApi(); cfg = await api.getPublicConfig(); } catch { return; } // the plain form still works
+  const closed = (d) => (cfg.closedDays || []).some((c) => c.day === dayKey(d));
+  const inRange = (d) => d && d >= cfg.horizon.first && d <= cfg.horizon.last;
+  st.date = inRange(saved.date) ? saved.date : (() => { let d = addDays(cfg.today, 1); if (closed(d)) d = addDays(d, 1); return d; })();
+  input.type = "hidden"; btn.hidden = false; quick.hidden = false;
+  const persist = () => { try { sessionStorage.setItem("kk.search", JSON.stringify({ date: st.date, golfers: st.golfers, category: st.category })); } catch {} };
   const strip = document.createElement("div");
-  strip.className = "date-strip"; strip.setAttribute("role", "radiogroup"); strip.setAttribute("aria-label", th ? "วันที่เล่น" : "Playing date");
-  for (let i = 0; i < 7; i++) {
-    const d = addDays(today, i);
-    const closed = dayKey(d) === "mon";
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "date-chip" + (closed ? " is-closed" : ""); b.setAttribute("role", "radio"); b.dataset.date = d;
-    b.setAttribute("aria-checked", String(d === date));
-    b.setAttribute("aria-label", formatDate(d, lang) + (closed ? (th ? " ปิดรับจองออนไลน์" : ", no online tee times") : ""));
-    b.innerHTML = `<span class="dow">${i === 0 ? (th ? "วันนี้" : "Today") : formatDate(d, lang, { weekday: "short" })}</span><span class="d num">${Number(d.slice(8))}</span><span class="m">${formatDate(d, lang, { month: "short" })}</span>`;
-    b.tabIndex = d === date ? 0 : -1;
-    b.addEventListener("click", () => { date = d; input.value = d; strip.querySelectorAll(".date-chip").forEach((c) => { const on = c.dataset.date === d; c.setAttribute("aria-checked", String(on)); c.tabIndex = on ? 0 : -1; }); b.scrollIntoView({ block: "nearest", inline: "nearest" }); });
-    strip.append(b);
+  strip.className = "date-strip quick"; strip.setAttribute("role", "radiogroup"); strip.setAttribute("aria-labelledby", "dock-quick-label");
+  dock.querySelector("[data-quick]").append(strip);
+  function render() {
+    input.value = st.date;
+    btn.querySelector("[data-date-value]").textContent = formatDate(st.date, lang, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    strip.innerHTML = "";
+    // The quick days are a projection of the same configured window: the next seven dates.
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(cfg.today, i);
+      if (d > cfg.horizon.last) break;
+      const c = closed(d);
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "date-chip" + (c ? " is-closed" : ""); b.setAttribute("role", "radio"); b.dataset.date = d;
+      b.setAttribute("aria-checked", String(d === st.date)); b.tabIndex = d === st.date || (i === 0 && !strip.querySelector('[tabindex="0"]') && !inWeek()) ? 0 : -1;
+      b.setAttribute("aria-label", formatDate(d, lang) + (c ? (th ? " ไม่มีเวลาออกรอบออนไลน์" : ", no online tee times") : ""));
+      b.innerHTML = `<span class="dow">${i === 0 ? (th ? "วันนี้" : "Today") : formatDate(d, lang, { weekday: "short" })}</span><span class="d num">${Number(d.slice(8))}</span>`;
+      b.addEventListener("click", () => { st.date = d; persist(); render(); strip.querySelector(`[data-date="${d}"]`)?.focus(); });
+      strip.append(b);
+    }
   }
+  const inWeek = () => st.date >= cfg.today && st.date <= addDays(cfg.today, 6);
   // One stop in the tab order; arrows, Home and End move the choice (a single-selection radio group).
   strip.addEventListener("keydown", (e) => {
     const chips = [...strip.children]; const i = chips.indexOf(document.activeElement); if (i < 0) return;
     const k = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: chips.length - 1 }[e.key];
     if (k == null) return;
-    const n = chips[(k + chips.length) % chips.length]; n.focus(); n.click(); e.preventDefault();
+    chips[(k + chips.length) % chips.length].click(); e.preventDefault();
   });
-  wrap.querySelector("label").id = "dock-date-label";
-  input.type = "hidden";
-  // When the seven dates do not fit, a soft edge shows there is more to swipe to.
-  const cue = () => { const more = strip.scrollWidth - strip.clientWidth > 2; strip.classList.toggle("has-more-right", more && strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 2); strip.classList.toggle("has-more-left", more && strip.scrollLeft > 2); };
-  strip.addEventListener("scroll", cue, { passive: true }); new ResizeObserver(cue).observe(strip);
-  wrap.append(strip);
-  const more = document.createElement("a");
-  more.className = "small"; more.href = dock.action; more.textContent = th ? "เลือกวันอื่นภายใน 14 วัน" : "Other dates in the next 14 days";
-  wrap.append(more);
-  dock.querySelectorAll("[data-step]").forEach((b) => b.addEventListener("click", () => {
-    const n = Math.min(4, Math.max(1, Number(golfers.value) + Number(b.dataset.step)));
-    golfers.value = n; out.textContent = th ? `${n} ท่าน` : `${n} golfer${n > 1 ? "s" : ""}`;
-    dock.querySelector('[data-step="-1"]').disabled = n <= 1; dock.querySelector('[data-step="1"]').disabled = n >= 4;
-  }));
-  out.textContent = th ? "2 ท่าน" : "2 golfers";
-  dock.addEventListener("submit", (e) => {
-    e.preventDefault();
-    try { sessionStorage.setItem("kk.search", JSON.stringify({ date, golfers: Number(golfers.value), category: "visitor" })); } catch {}
-    location.href = dock.action + (dock.action.endsWith(".html") ? "" : "") + `?date=${date}&golfers=${golfers.value}`;
-  });
+  const setGolfers = (n) => {
+    st.golfers = Math.min(cfg.maxGroup || 4, Math.max(1, n)); golfers.value = st.golfers;
+    out.textContent = th ? `${st.golfers} ท่าน` : `${st.golfers} golfer${st.golfers > 1 ? "s" : ""}`;
+    dock.querySelector('[data-step="-1"]').disabled = st.golfers <= 1; dock.querySelector('[data-step="1"]').disabled = st.golfers >= (cfg.maxGroup || 4);
+  };
+  dock.querySelectorAll("[data-step]").forEach((b) => b.addEventListener("click", () => { setGolfers(st.golfers + Number(b.dataset.step)); persist(); picker.refresh(); }));
+  catSel.value = st.category;
+  catSel.addEventListener("change", () => { st.category = catSel.value; persist(); picker.refresh(); });
+  setGolfers(st.golfers);
+  const go = (pickSlot) => {
+    persist();
+    if (pickSlot) { try { sessionStorage.setItem("kk.pick", JSON.stringify({ slotId: pickSlot, date: st.date, at: Date.now() })); } catch {} }
+    location.href = `${dock.action}?date=${st.date}&golfers=${st.golfers}${st.category !== "visitor" ? `&category=${st.category}` : ""}`;
+  };
+  const picker = createPicker({ trigger: btn, anchor: dock.querySelector(".finder-bar"), api, getCfg: () => cfg,
+    getCriteria: () => ({ partySize: st.golfers, category: st.category, clientId: clientId() }),
+    getValue: () => st.date, onCommit: (d) => { st.date = d; persist(); render(); },
+    onPickTime: (slotId) => go(slotId) });
+  dock.querySelector("[data-view-cal]").addEventListener("click", () => picker.open());
+  dock.addEventListener("submit", (e) => { e.preventDefault(); go(null); });
+  onBangkokMidnight(cfg.serverTime, async () => { try { cfg = await api.getPublicConfig(); if (!inRange(st.date)) st.date = cfg.horizon.first; picker.refresh(); render(); } catch {} });
+  render();
 }
 
 // ---- Hole viewer: the club's diagram in 2D, or the 3D model opening straight down so it matches the diagram.
@@ -167,7 +189,7 @@ if (rail && stage && data.length) {
     const h = data.find((x) => x.n === n); if (!h) return;
     rail.querySelectorAll("[data-hole]").forEach((b) => { const on = Number(b.dataset.hole) === n; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
     stage.setAttribute("aria-labelledby", `hole-tab-${n}`);
-    const anim = !matchMedia("(prefers-reduced-motion: reduce)").matches && stage.animate;
+    const anim = !motionOff() && stage.animate;
     const apply = () => {
       q("numeral").textContent = pad2(n);
       q("title").textContent = `${th ? `หลุมที่ ${n}` : `Hole ${n}`}${h.par ? `, ${th ? "พาร์" : "par"} ${h.par}` : ""}`;
@@ -216,7 +238,6 @@ if (idx) {
 // they no longer close when the section scrolls out of view).
 const facSection = document.querySelector("[data-fac]");
 if (facSection) {
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const items = [...facSection.querySelectorAll("[data-fac-item]")];
   const parts = (it) => ({ btn: it.querySelector(".fac-head"), panel: it.querySelector(".fac-panel") });
   const setOpen = (it, open, { instant = false } = {}) => {
@@ -224,7 +245,7 @@ if (facSection) {
     if ((btn.getAttribute("aria-expanded") === "true") === open) return;
     btn.setAttribute("aria-expanded", String(open));
     panel.getAnimations?.().forEach((a) => a.cancel());
-    if (instant || reduce || !panel.animate) { panel.hidden = !open; return; }
+    if (instant || motionOff() || !panel.animate) { panel.hidden = !open; return; }
     if (open) {
       panel.hidden = false;
       const h = panel.scrollHeight;
@@ -244,9 +265,9 @@ if (facSection) {
     items.forEach((o) => { if (o !== it) setOpen(o, false); });
     setOpen(it, open);
     remember();
-    if (open && !reduce) {
-      // Keep the opened heading in view when a long panel above it closes.
-      requestAnimationFrame(() => { const top = it.getBoundingClientRect().top; const hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 72; if (top < hh) window.scrollBy({ top: top - hh - 12, behavior: "smooth" }); });
+    if (open) {
+      // Keep the opened heading in view when a long panel above it closes; no smooth scroll while motion is off.
+      requestAnimationFrame(() => { const top = it.getBoundingClientRect().top; const hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 72; if (top < hh) window.scrollBy({ top: top - hh - 12, behavior: motionOff() ? "instant" : "smooth" }); });
     }
   }));
   facSection.querySelectorAll("details.school").forEach((d) => d.addEventListener("toggle", remember));

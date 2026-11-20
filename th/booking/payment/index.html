@@ -61,29 +61,33 @@
       <h1 class="h1">ชำระมัดจำ</h1>
       <div data-flow-missing hidden class="empty-state"><b>ไม่พบการจองนี้</b><a class="btn" href="../../../th/tee-times/index.html">เลือกเวลาใหม่ <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
       <div class="panel" data-pay-panel>
-        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">วิธีชำระ</legend>
+        <div class="notice demo"><span>เดโมเท่านั้น ไม่มีการเก็บเงินจริง</span></div>
+        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">วิธีชำระที่จำลอง</legend>
           <div class="pay-methods">
-            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay QR</b><span class="small muted">สแกนด้วยแอปธนาคาร QR ผูกกับรายการนี้เท่านั้น</span></label>
-            <label class="pay-method"><input type="radio" name="method" value="card"><b>บัตรเครดิตหรือเดบิต</b><span class="small muted">กรอกบัตรในหน้าของผู้ให้บริการชำระเงิน เว็บไซต์ไม่เห็นเลขบัตร</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay QR</b><span class="small muted">ในระบบจริงจะสแกนด้วยแอปธนาคาร ในเดโมนี้ภาพ QR เป็นภาพประกอบที่สแกนไม่ได้ ใช้ปุ่มด้านล่างแทน</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="card"><b>บัตรเครดิตหรือเดบิต</b><span class="small muted">ในระบบจริงกรอกบัตรในหน้าของผู้ให้บริการ เดโมนี้ไม่ขอข้อมูลบัตร</span></label>
           </div>
         </fieldset>
-        <p class="row"><button class="btn" type="button" data-start-pay>สร้างรายการชำระ</button></p>
+        <p class="row"><button class="btn" type="button" data-pay-sim>จำลองการชำระมัดจำ</button></p>
+        <p class="small muted">ปุ่มนี้สร้างคำขอชำระเงินในระบบทดสอบ แล้วส่งผลสำเร็จแทนผู้ให้บริการ การจองยืนยันเมื่อระบบตรวจผลนั้นแล้วเท่านั้น</p>
+        <div data-pay-note></div>
         <div data-pay-live hidden class="stack" style="gap:16px">
-          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status>รอการชำระเงิน</b><p class="small muted" data-pay-expiry></p></div></div>
-          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="QR ตัวอย่าง สแกนไม่ได้"></div><div class="stack small" style="max-width:32em"><p>เราจะยืนยันการจองเมื่อผู้ให้บริการชำระเงินแจ้งว่าเงินเข้าแล้วเท่านั้น การกดปุ่มหรือแนบสลิปไม่ถือเป็นการยืนยัน</p><p class="muted">หน้านี้อัปเดตเองเมื่อสถานะเปลี่ยน</p></div></div>
+          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status aria-live="polite"></b><p class="small muted" data-pay-expiry></p></div></div>
+          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="ภาพประกอบ QR ในระบบทดสอบ สแกนไม่ได้"></div><div class="stack small" style="max-width:32em"><p>เราจะยืนยันการจองเมื่อผู้ให้บริการชำระเงินแจ้งว่าเงินเข้าแล้วเท่านั้น การกดปุ่มหรือแนบสลิปไม่ถือเป็นการยืนยัน</p><p class="muted">หน้านี้อัปเดตเองเมื่อสถานะเปลี่ยน รีเฟรชได้โดยไม่สร้างคำขอใหม่</p></div></div>
         </div>
       </div>
-      <div class="sandbox" data-sandbox hidden>
-        <h3>ปุ่มทดสอบแทนแอปธนาคาร (มีเฉพาะในเดโม)</h3>
+      <details class="sandbox" data-sandbox>
+        <summary>ทดสอบผลลัพธ์อื่น (เฉพาะเดโม)</summary>
+        <p class="small">ปุ่มเหล่านี้แทนผลจากผู้ให้บริการชำระเงิน</p>
         <div class="row">
-          <button class="btn small" type="button" data-act="succeed">ชำระสำเร็จ</button>
+          <button class="btn small" type="button" data-act="pending" data-start-pay>สร้างคำขอแล้วรอ</button>
           <button class="btn small" type="button" data-act="fail">ชำระไม่สำเร็จ</button>
-          <button class="btn small" type="button" data-act="expire">ปล่อยให้ QR หมดอายุ</button>
+          <button class="btn small" type="button" data-act="expire">ปล่อยให้คำขอหมดอายุ</button>
           <button class="btn small" type="button" data-act="twice">ผู้ให้บริการแจ้งซ้ำสองครั้ง</button>
           <button class="btn small" type="button" data-act="later">ชำระช้า หลังหมดเวลากัน</button>
         </div>
         <p class="small" data-sandbox-log aria-live="polite"></p>
-      </div>
+      </details>
     </div>
     <aside class="summary" data-summary><h2>สรุปการจอง</h2><div data-summary-body><div class="skeleton" style="height:180px"></div></div></aside>
   </div>

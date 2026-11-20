@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>开球时间 | Krungthep Kreetha</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="查找 Krungthep Kreetha 开球时间。最多可提前14天预订，填写任何信息之前，即可查看每个时段的价格、定金和剩余名额。立即选择。">
+<meta name="description" content="在 Krungthep Kreetha 查找开球时间。填写任何信息之前，即可看到每个时间的价格、定金和剩余名额，最多可提前 60 天。在这里选择您的时间。">
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://www.krungthepkreetha.co.th/zh/tee-times/">
 <link rel="alternate" hreflang="th" href="https://www.krungthepkreetha.co.th/th/tee-times/">
@@ -15,7 +15,7 @@
 <link rel="alternate" hreflang="x-default" href="https://www.krungthepkreetha.co.th/th/tee-times/">
 <meta property="og:type" content="网站">
 <meta property="og:title" content="开球时间 | Krungthep Kreetha">
-<meta property="og:description" content="查找 Krungthep Kreetha 开球时间。最多可提前14天预订，填写任何信息之前，即可查看每个时段的价格、定金和剩余名额。立即选择。">
+<meta property="og:description" content="在 Krungthep Kreetha 查找开球时间。填写任何信息之前，即可看到每个时间的价格、定金和剩余名额，最多可提前 60 天。在这里选择您的时间。">
 <meta property="og:image" content="https://www.krungthepkreetha.co.th/img/hero-aerial-og.jpg">
 <meta property="og:locale" content="zh_CN">
 <meta name="theme-color" content="#152A24">
@@ -62,43 +62,48 @@
   </div>
 </section>
 <section class="section-tight" style="padding-top:0">
-  <div class="wrap tt-layout" data-teetimes>
-    <div>
-      <form class="tt-search" data-search onsubmit="return false">
-        <fieldset><legend id="date-legend">打球日期</legend><div class="date-strip" data-dates role="radiogroup" aria-labelledby="date-legend"><div class="skeleton" style="height:64px;grid-column:span 7"></div></div></fieldset>
-        <div class="row">
-          <div class="field"><span class="label" id="g-label">球员</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="减少人数">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="增加人数">+</button></div></div>
-          <fieldset><legend>打球人员</legend><div class="seg" role="radiogroup" data-category>
-            <label><input type="radio" name="category" value="visitor" checked><span>访客</span></label>
-            <label><input type="radio" name="category" value="member_guest"><span>会员嘉宾</span></label>
-            <label><input type="radio" name="category" value="member"><span>会员</span></label>
-          </div></fieldset>
-        </div>
-        <div class="member-row" data-member hidden>
-          <div class="field"><label for="member-no">会员编号</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">演示：请尝试 D-0001（有效）或 D-0002（已暂停）</span></div>
-          <button class="btn secondary" type="button" data-verify>查询会员资格</button>
-        </div>
-        <p class="small muted" data-category-note hidden></p>
-      </form>
-      <div class="results-head"><h2 data-results-title aria-live="polite">正在加载开球时间</h2><span class="legend small muted" aria-hidden="true"><span><i></i>空位</span><span><i class="taken"></i>已预订</span><span>曼谷时间</span></span></div>
-      <div data-results aria-busy="true">
-        <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
-        <noscript><div class="notice warn"><span>开球时间查询需要启用 JavaScript。预订请致电 0-2736-0378-9。</span></div></noscript>
+  <div class="wrap" data-teetimes>
+    <form class="tt-search" data-search onsubmit="return false">
+      <div class="tt-bar">
+        <div class="field tt-date"><span class="label" id="date-legend">打球日期</span>
+          <button type="button" class="date-btn" data-date-btn aria-haspopup="dialog" aria-expanded="false" aria-labelledby="date-legend date-value"><span class="dv" id="date-value" data-date-value><span class="skeleton" style="display:inline-block;width:9em;height:1em"></span></span><svg class="cal-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></button></div>
+        <div class="field"><span class="label" id="g-label">球员</span><div class="stepper" role="group" aria-labelledby="g-label"><button type="button" data-step="-1" aria-label="减少人数">&minus;</button><output data-golfers aria-live="polite">2</output><button type="button" data-step="1" aria-label="增加人数">+</button></div></div>
+        <fieldset class="tt-cat"><legend>打球人员</legend><div class="seg" role="radiogroup" data-category>
+          <label><input type="radio" name="category" value="visitor" checked><span>访客</span></label>
+          <label><input type="radio" name="category" value="member_guest"><span>会员嘉宾</span></label>
+          <label><input type="radio" name="category" value="member"><span>会员</span></label>
+        </div></fieldset>
       </div>
+      <div class="tt-quick"><div class="date-strip" data-dates role="radiogroup" aria-label="附近日期"></div><button type="button" class="link-btn" data-view-cal aria-haspopup="dialog">查看整月日历</button></div>
+      <div class="member-row" data-member hidden>
+        <div class="field"><label for="member-no">会员编号</label><input class="input" id="member-no" autocomplete="off" placeholder="D-0001"><span class="hint">演示：请尝试 D-0001（有效）或 D-0002（已暂停）</span></div>
+        <button class="btn secondary" type="button" data-verify>查询会员资格</button>
+      </div>
+      <p class="small muted" data-category-note hidden></p>
+    </form>
+    <div class="tt-layout">
+      <div>
+        <div class="results-head"><h2 data-results-title aria-live="polite">正在加载开球时间</h2><span class="legend small muted" aria-hidden="true"><span><i></i>空位</span><span><i class="taken"></i>已预订</span><span>曼谷时间</span></span></div>
+        <p class="tt-deposit small" data-day-deposit></p>
+        <div data-results aria-busy="true">
+          <div class="slots"><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div><div class="skeleton slot-skeleton"></div></div>
+          <noscript><div class="notice warn"><span>开球时间查询需要启用 JavaScript。预订请致电 0-2736-0378-9。</span></div></noscript>
+        </div>
+      </div>
+      <aside class="summary" data-summary aria-labelledby="sum-title">
+        <h2 id="sum-title">您的选择</h2>
+        <div data-summary-body><p class="muted small">从列表中选择一个时段。在您填写信息期间，我们会为您保留10分钟。</p></div>
+      </aside>
     </div>
-    <aside class="summary" data-summary aria-labelledby="sum-title">
-      <h2 id="sum-title">您的选择</h2>
-      <div data-summary-body><p class="muted small">从列表中选择一个时段。在您填写信息期间，我们会为您保留10分钟。</p></div>
-    </aside>
   </div>
   <div class="mobile-summary" data-mobile-summary hidden><span data-ms-text></span><a class="btn light small" data-ms-go href="../../zh/booking/details/index.html">继续 <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
 </section>
 <section class="section paper" aria-labelledby="how-title">
   <div class="wrap">
-    <div class="section-head"><h2 class="h2" id="how-title">在线预订流程</h2><p class="lead">以下条款均为示例，有待委员会批准；唯有可抵扣果岭费的 500 泰铢定金取自球场自己的海报。</p></div>
+    <div class="section-head"><h2 class="h2" id="how-title">在线预订流程</h2><p class="lead">以下条款为等待委员会批准的示例。抵扣果岭费的 500 泰铢来自俱乐部海报；提前预订定金是演示假设。</p></div>
     <ol class="how-steps">
       <li><b>保留10分钟</b><span class="small muted">选择时段即为您保留名额，期间他人无法预订。</span></li>
-      <li><b>每位球员定金 500 泰铢</b><span class="small muted">打球时可抵扣果岭费，尾款于球场支付。</span></li>
+      <li><b>演示定金每位 500 泰铢，提前 8 天或以上预订为每位 250 泰铢</b><span class="small muted">按曼谷日历天数，从保留时间的当天起算。定金抵扣果岭费，余额在俱乐部支付。</span></li>
       <li><b>提前48小时取消可退款</b><span class="small muted">此后，定金将作为取消费用不予退还（示例数值）。</span></li>
       <li><b>未到场</b><span class="small muted">若开球时间后30分钟内无人到场，已付定金将不予退还，不再另行收费。</span></li>
     </ol>

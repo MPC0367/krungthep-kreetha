@@ -3,7 +3,7 @@
  "mode": "demo",
  "timezone": "Asia/Bangkok",
  "schedule": {
-  "horizonDays": 14,
+  "horizonDays": 60,
   "capacityModel": "seat",
   "maxGroup": 4,
   "holdMinutes": 10,
@@ -68,7 +68,8 @@
     "to": "07:00"
    }
   ],
-  "intervalNote": "Tee times every 30 minutes, on the hour and half hour (client request, 18 Nov 2026)"
+  "intervalNote": "Tee times every 30 minutes, on the hour and half hour (client request, 18 Nov 2026)",
+  "horizonNote": "Phase 2 demo horizon (20 Nov 2026): 60 calendar dates including Bangkok today, offsets 0 to 59. A shorter value here shortens the calendar, the tee sheet and the service check together."
  },
  "holidays": {
   "note": "Demo holiday list. Confirm against the club's calendar.",
@@ -82,12 +83,28 @@
  },
  "policy": {
   "id": "KK-POLICY-DEMO-1",
-  "version": 1,
+  "version": 2,
   "illustrative": true,
   "deposit": {
    "basis": "per_golfer",
    "amountMinor": 50000,
-   "source": "Visitor package poster: 'A booking deposit of THB 500 will be credited toward your green fee'. Per-golfer basis is our assumption."
+   "source": "Visitor package poster: 'A booking deposit of THB 500 will be credited toward your green fee'. Per-golfer basis is our assumption.",
+   "tiers": [
+    {
+     "id": "standard",
+     "minLeadDays": 0,
+     "maxLeadDays": 7,
+     "amountMinor": 50000,
+     "source": "The THB 500 amount is from the club poster. Applying it per golfer, and only up to 7 days ahead, is part of the demo."
+    },
+    {
+     "id": "advance",
+     "minLeadDays": 8,
+     "amountMinor": 25000,
+     "assumption": "O2 demo assumption (Phase 2 brief, 20 Nov 2026): THB 250 per golfer for tee dates more than seven Bangkok calendar days after the day the hold is made. Not a club rule."
+    }
+   ],
+   "leadRule": "Lead time is the number of Bangkok calendar days from the day the hold is created to the tee date. Day 7 uses the standard deposit; day 8 and later use the advance deposit."
   },
   "cancellation": {
    "freeUntilHoursBefore": 48,

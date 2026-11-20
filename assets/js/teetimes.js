@@ -1,8 +1,9 @@
-// Tee-time discovery: date strip, group size, golfer type, time band, results by session,
-// a server-created hold with a countdown, and live updates when another booking takes a place.
+// Tee-time discovery: the playing-date calendar and nearby dates, group size, golfer type, results by
+// session, a server-created hold with a countdown, and live updates when another booking takes a place.
 import { getApi, clientId } from "./api.js";
 import { addDays, dayKey, bkkDate } from "./core/util.js";
 import { lang, th, esc, money, time, day, CAT, SESSION, teeName, flow, errorText, countdown, summaryHTML, link } from "./ui.js";
+import { createPicker, depositText, dueNowText, onBangkokMidnight } from "./datepicker.js";
 
 const box = document.querySelector("[data-teetimes]");
 const results = box.querySelector("[data-results]");
@@ -10,37 +11,50 @@ const title = box.querySelector("[data-results-title]");
 const summary = box.querySelector("[data-summary-body]");
 const mobileSum = document.querySelector("[data-mobile-summary]");
 const datesEl = box.querySelector("[data-dates]");
+const dateBtn = box.querySelector("[data-date-btn]");
+const depEl = box.querySelector("[data-day-deposit]");
 const q = new URLSearchParams(location.search);
 let saved = {}; try { saved = JSON.parse(sessionStorage.getItem("kk.search") || "{}"); } catch {}
 const carried = window.kk.takeCarry?.() || {};
 const state = {
   date: carried.date || q.get("date") || saved.date, golfers: Number(carried.golfers || q.get("golfers") || saved.golfers || 2), category: carried.category || saved.category || "visitor",
-  band: "all", memberNumber: carried.memberNumber || "", hold: null, quote: null, slot: null, data: null,
+  band: carried.band || "all", memberNumber: carried.memberNumber || "", hold: null, quote: null, slot: null, data: null,
 };
 window.kk.carry = () => ({ date: state.date, golfers: state.golfers, category: state.category, band: state.band, memberNumber: state.memberNumber });
-let api, cfg, stopCountdown = () => {}, loadSeq = 0;
+let api, cfg, picker, stopCountdown = () => {}, loadSeq = 0;
 const cid = clientId();
 
 function persist() { try { sessionStorage.setItem("kk.search", JSON.stringify({ date: state.date, golfers: state.golfers, category: state.category })); } catch {} }
 
+const closedDay = (d) => (cfg.closedDays || []).some((c) => c.day === dayKey(d));
+function setDate(d) {
+  state.date = d; persist();
+  renderDates(); if (state.hold) renderSummary(); load();
+}
+/** The calendar button shows the committed date; seven nearby dates sit beside it as shortcuts. */
 function renderDates() {
+  dateBtn.querySelector("[data-date-value]").textContent = day(state.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   datesEl.innerHTML = "";
-  for (let i = 0; i < 14; i++) {
-    const d = addDays(cfg.today, i);
-    if (d > cfg.horizon.last) break;
-    const closed = dayKey(d) === "mon";
+  const first = cfg.horizon.first, last = cfg.horizon.last;
+  let start = addDays(state.date, -3);
+  if (start < first) start = first;
+  if (addDays(start, 6) > last) start = addDays(last, -6) < first ? first : addDays(last, -6);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(start, i);
+    if (d > last) break;
+    const closed = closedDay(d);
     const b = document.createElement("button");
     b.type = "button"; b.className = "date-chip" + (closed ? " is-closed" : ""); b.dataset.date = d; b.setAttribute("role", "radio");
     b.setAttribute("aria-checked", String(d === state.date)); b.tabIndex = d === state.date ? 0 : -1;
     b.setAttribute("aria-label", day(d) + (closed ? (th ? " ไม่มีเวลาออกรอบออนไลน์" : ", no online tee times") : ""));
-    b.innerHTML = `<span class="dow">${i === 0 ? (th ? "วันนี้" : "Today") : day(d, { weekday: "short" })}</span><span class="d num">${Number(d.slice(8))}</span><span class="m">${day(d, { month: "short" })}</span>`;
-    b.addEventListener("click", () => { state.date = d; persist(); datesEl.querySelectorAll(".date-chip").forEach((c) => { c.setAttribute("aria-checked", String(c.dataset.date === d)); c.tabIndex = c.dataset.date === d ? 0 : -1; }); if (state.hold) renderSummary(); load(); });
+    b.innerHTML = `<span class="dow">${d === cfg.today ? (th ? "วันนี้" : "Today") : day(d, { weekday: "short" })}</span><span class="d num">${Number(d.slice(8))}</span><span class="m">${day(d, { month: "short" })}</span>`;
+    b.addEventListener("click", () => { if (d !== state.date) setDate(d); });
     datesEl.append(b);
   }
   datesEl.onkeydown = (e) => {
-    if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
     const chips = [...datesEl.children]; const i = chips.indexOf(document.activeElement); if (i < 0) return;
-    const n = chips[Math.min(chips.length - 1, Math.max(0, i + (e.key === "ArrowRight" ? 1 : -1)))]; n.focus(); n.click(); e.preventDefault();
+    const k = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: chips.length - 1 }[e.key]; if (k == null) return;
+    const n = chips[Math.min(chips.length - 1, Math.max(0, k))]; e.preventDefault(); const to = n.dataset.date; n.click(); datesEl.querySelector(`[data-date="${to}"]`)?.focus();
   };
 }
 
@@ -71,10 +85,12 @@ function slotHTML(s, sessionPrice) {
 function renderResults() {
   const data = state.data;
   results.setAttribute("aria-busy", "false");
+  depEl.textContent = "";
   if (data.dayState === "closed") {
     title.textContent = th ? `${day(state.date)} ไม่มีเวลาออกรอบออนไลน์` : `No online tee times on ${day(state.date)}`;
     const next = addDays(state.date, 1);
-    results.innerHTML = `<div class="empty-state"><b>${th ? "วันจันทร์สงวนไว้สำหรับการปิดสนามจัดการแข่งขันในระบบตัวอย่างนี้" : "In this demo, Mondays are kept for course hire."}</b><p class="muted">${th ? "สนามแจ้งว่าวันจันทร์เปิด 08.00 ถึง 19.00 น. โทรสอบถามเวลาว่างได้ที่ 0-2736-0378-9" : "The club lists Monday hours of 08:00 to 19:00. Call 0-2736-0378-9 to ask about Monday play."}</p><button class="btn secondary" type="button" data-go="${next}">${th ? `ดู${day(next, { weekday: "long" })}` : `See ${day(next, { weekday: "long" })}`}</button></div>`;
+    if (data.reason !== "course-hire") { results.innerHTML = `<div class="empty-state"><b>${th ? "วันนี้ปิดรับจองออนไลน์" : "No online tee times on this date."}</b><p class="muted">${th ? "โทรสอบถามแผนกจองที่ 0-2736-0378-9" : "Call the booking desk on 0-2736-0378-9."}</p><button class="btn secondary" type="button" data-go="${next}">${th ? `ดู${day(next, { weekday: "long" })}` : `See ${day(next, { weekday: "long" })}`}</button></div>`; return; }
+    results.innerHTML = `<div class="empty-state"><b>${th ? "วันจันทร์สงวนไว้สำหรับการปิดสนามจัดการแข่งขันในระบบตัวอย่างนี้" : "In this demo, Mondays are kept for course hire."}</b><p class="muted">${th ? "สนามแจ้งว่าวันจันทร์เปิด 08.00 ถึง 19.00 น. โทรสอบถามเวลาว่างได้ที่ 0-2736-0378-9 หรือส่งคำขอปิดสนามจัดงาน" : "The club lists Monday hours of 08:00 to 19:00. Call 0-2736-0378-9 to ask about Monday play, or send a course-hire enquiry."}</p><p><a class="link-arrow" href="${link("events/")}">${th ? "ส่งคำขอจัดงาน" : "Send an event enquiry"}</a></p><button class="btn secondary" type="button" data-go="${next}">${th ? `ดู${day(next, { weekday: "long" })}` : `See ${day(next, { weekday: "long" })}`}</button></div>`;
     return;
   }
   if (data.dayState === "stale") {
@@ -88,6 +104,9 @@ function renderResults() {
   const sessions = data.sessions.filter((s) => state.band === "all" || s.id === state.band);
   const all = sessions.flatMap((s) => s.slots);
   const open = all.filter((s) => ["available", "partial", "yours"].includes(s.state));
+  // The deposit for this date and group is visible before anything is held (per-golfer basis included).
+  const q0 = open[0]?.quote;
+  depEl.innerHTML = q0 ? (q0.priceMode === "member_account" ? `<span>${depositText(q0)}</span>` : `<span>${dueNowText(q0, state.golfers)}</span>. <span>${depositText(q0)}</span>.`) : "";
   if (data.eligibility.ok) title.textContent = th ? `${day(state.date)} มี ${open.length} เวลาที่ว่างสำหรับ ${state.golfers} ท่าน` : `${open.length} time${open.length === 1 ? "" : "s"} for ${state.golfers} on ${day(state.date)}`;
   if (!open.length && data.eligibility.ok) {
     results.innerHTML = `<div class="empty-state"><b>${th ? "ไม่มีเวลาว่างตามที่เลือก" : "Nothing free for this choice"}</b><p class="muted">${th ? "ลองลดจำนวนผู้เล่น เปลี่ยนช่วงเวลา หรือเลือกวันอื่น" : "Try fewer golfers, another time of day, or another date."}</p><div class="row"><button class="btn secondary" type="button" data-go="${addDays(state.date, 1)}">${th ? "วันถัดไป" : "Next day"}</button><a class="btn secondary" href="tel:027360378">${th ? "โทรหาแผนกจอง" : "Call the booking desk"}</a></div></div>`;
@@ -111,14 +130,14 @@ function renderResults() {
 
 async function load({ quiet = false } = {}) {
   const my = ++loadSeq;
-  if (!quiet) { results.setAttribute("aria-busy", "true"); results.style.opacity = ".55"; }
+  if (!quiet) { results.setAttribute("aria-busy", "true"); results.style.opacity = ".55"; title.textContent = th ? `กำลังอัปเดตเวลา ${day(state.date)}` : `Updating times for ${day(state.date)}`; }
   try {
     const data = await api.listAvailability({ date: state.date, partySize: state.golfers, category: state.category, memberNumber: state.memberNumber, clientId: cid });
     if (my !== loadSeq) return; // a newer request superseded this one
     state.data = data; renderResults();
   } catch (e) {
     if (my !== loadSeq) return;
-    title.textContent = errorText(e);
+    title.textContent = errorText(e); results.setAttribute("aria-busy", "false");
     results.innerHTML = `<div class="empty-state"><b>${errorText(e)}</b><button class="btn" type="button" data-retry>${th ? "ลองใหม่" : "Try again"}</button></div>`;
   } finally { if (my === loadSeq) results.style.opacity = ""; }
 }
@@ -147,6 +166,8 @@ async function select(slotId, btn) {
     state.hold = r.hold; state.quote = r.quote;
     flow.set({ holdId: r.hold.id, bookingId: null, token: null, ref: null });
     renderSummary();
+    const sb = box.querySelector("[data-summary]");
+    if (!document.documentElement.classList.contains("is-paused") && !matchMedia("(prefers-reduced-motion: reduce)").matches) { sb.classList.add("is-new"); setTimeout(() => sb.classList.remove("is-new"), 160); }
     await load({ quiet: true });
     document.querySelector(`[data-slot="${slotId}"]`)?.focus();
     window.kk.toast?.(th ? `กันเวลา ${time(r.hold.time)} ไว้ให้คุณแล้ว` : `${r.hold.time} is held for you`);
@@ -156,22 +177,25 @@ async function select(slotId, btn) {
     if (e.code === "NO_CAPACITY" && e.detail?.alternatives?.length) {
       const near = e.detail.alternatives.map((a) => `<button class="btn small secondary" type="button" data-slot="${a.id}">${time(a.time)}</button>`).join("");
       results.insertAdjacentHTML("afterbegin", `<div class="notice warn" style="margin-bottom:16px"><span>${errorText(e)} <span class="row" style="margin-top:8px">${near}</span></span></div>`);
+    } else {
+      // A quiet inline note where the choice was made; the held time, if any, is unchanged.
+      results.insertAdjacentHTML("afterbegin", `<div class="notice warn" style="margin-bottom:16px"><span>${errorText(e)}${state.hold ? ` ${th ? "เวลาที่กันไว้เดิมยังอยู่" : "Your held time is unchanged."}` : ""}</span></div>`);
     }
   } finally { btn?.classList.remove("is-loading"); }
 }
 
 box.addEventListener("click", async (e) => {
   const s = e.target.closest("[data-slot]"); if (s) return select(s.dataset.slot, s);
-  const g = e.target.closest("[data-go]"); if (g) { state.date = g.dataset.go; persist(); renderDates(); if (state.hold) renderSummary(); return load(); }
+  const g = e.target.closest("[data-go]"); if (g) return setDate(g.dataset.go);
   if (e.target.closest("[data-retry]")) return load();
   if (e.target.closest("[data-release]")) { try { await api.releaseHold({ holdId: state.hold.id, clientId: cid }); } catch (err) { window.kk.toast?.(errorText(err)); return; } state.hold = null; flow.clear(); renderSummary(); load({ quiet: true }); }
 });
 box.querySelectorAll("[data-step]").forEach((b) => b.addEventListener("click", () => {
-  state.golfers = Math.min(cfg.maxGroup, Math.max(1, state.golfers + Number(b.dataset.step))); persist(); syncControls(); if (state.hold) renderSummary(); load();
+  state.golfers = Math.min(cfg.maxGroup, Math.max(1, state.golfers + Number(b.dataset.step))); persist(); syncControls(); picker?.refresh(); if (state.hold) renderSummary(); load();
 }));
-box.querySelector("[data-category]").addEventListener("change", (e) => { state.category = e.target.value; persist(); syncControls(); if (state.hold) renderSummary(); load(); });
+box.querySelector("[data-category]").addEventListener("change", (e) => { state.category = e.target.value; persist(); syncControls(); picker?.refresh(); if (state.hold) renderSummary(); load(); });
 box.querySelector("[data-band]")?.addEventListener("change", (e) => { state.band = e.target.value; renderResults(); });
-box.querySelector("[data-verify]").addEventListener("click", () => { state.memberNumber = box.querySelector("#member-no").value.trim(); load(); });
+box.querySelector("[data-verify]").addEventListener("click", () => { state.memberNumber = box.querySelector("#member-no").value.trim(); picker?.refresh(); load(); });
 box.querySelector("#member-no").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); box.querySelector("[data-verify]").click(); } });
 
 function syncControls() {
@@ -197,13 +221,26 @@ function syncControls() {
     api = await getApi();
     cfg = await api.getPublicConfig();
   } catch (e) { results.innerHTML = `<div class="notice bad"><span>${errorText(e)}</span></div>`; return; }
-  if (!state.date || state.date < cfg.horizon.first || state.date > cfg.horizon.last) { let d = addDays(cfg.today, 1); if (dayKey(d) === "mon") d = addDays(d, 1); state.date = d; }
+  if (!state.date || state.date < cfg.horizon.first || state.date > cfg.horizon.last) { let d = addDays(cfg.today, 1); if (closedDay(d)) d = addDays(d, 1); state.date = d; }
   state.golfers = Math.min(cfg.maxGroup, Math.max(1, state.golfers || 2));
   renderDates(); syncControls();
+  picker = createPicker({ trigger: dateBtn, anchor: box.querySelector(".tt-search"), api, getCfg: () => cfg,
+    getCriteria: () => ({ partySize: state.golfers, category: state.category, memberNumber: state.memberNumber, clientId: cid }),
+    getValue: () => state.date, onCommit: (d) => { if (d !== state.date) setDate(d); },
+    onPickTime: (slotId) => select(slotId, null) });
+  box.querySelector("[data-view-cal]").addEventListener("click", () => picker.open());
+  // At Bangkok midnight new searches start from the new day; a live hold keeps its own quote.
+  onBangkokMidnight(cfg.serverTime, async () => { try { cfg = await api.getPublicConfig(); if (state.date < cfg.horizon.first) state.date = cfg.horizon.first; picker.refresh(); renderDates(); load({ quiet: true }); } catch {} });
   // Resume an existing hold (refresh, back button, language switch)
   const f = flow.get();
-  if (f?.holdId) { try { const r = await api.getHold({ holdId: f.holdId, clientId: cid }); if (r.hold.status === "ACTIVE") { state.hold = r.hold; state.quote = r.quote; state.date = r.hold.date; renderDates(); } } catch { flow.clear(); } }
+  if (f?.holdId) { try { const r = await api.getHold({ holdId: f.holdId, clientId: cid }); if (r.hold.status === "ACTIVE") { state.hold = r.hold; state.quote = r.quote; if (!q.get("date") && !carried.date) state.date = r.hold.date; renderDates(); } } catch { flow.clear(); } }
   renderSummary();
   await load();
+  // A time chosen in the homepage calendar arrives here once and goes through the same hold path.
+  let pick = null; try { pick = JSON.parse(sessionStorage.getItem("kk.pick") || "null"); sessionStorage.removeItem("kk.pick"); } catch {}
+  if (pick?.slotId && pick.slotId.startsWith(state.date) && Date.now() - pick.at < 10 * 60e3 && state.hold?.slotId !== pick.slotId) {
+    await select(pick.slotId, document.querySelector(`[data-slot="${pick.slotId}"]`));
+    box.querySelector("[data-summary]")?.scrollIntoView({ block: "nearest" });
+  }
   api.subscribe("availability", () => load({ quiet: true }));
 })();

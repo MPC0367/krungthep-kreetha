@@ -62,29 +62,33 @@
       <h1 class="h1">支付定金</h1>
       <div data-flow-missing hidden class="empty-state"><b>未能找到此预订</b><a class="btn" href="../../../zh/tee-times/index.html">选择时间 <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
       <div class="panel" data-pay-panel>
-        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">付款方式</legend>
+        <div class="notice demo"><span>仅为演示，不会收取任何款项。</span></div>
+        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">模拟的付款方式</legend>
           <div class="pay-methods">
-            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay 二维码</b><span class="small muted">可使用任意泰国银行应用扫描。此二维码仅适用于本次付款。</span></label>
-            <label class="pay-method"><input type="radio" name="method" value="card"><b>信用卡或借记卡</b><span class="small muted">在支付服务商页面填写。本网站不会接触任何卡号。</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay 二维码</b><span class="small muted">正式系统会显示供银行应用扫描的二维码。这里的二维码只是无法扫描的示意图，请改用下方按钮。</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="card"><b>信用卡或借记卡</b><span class="small muted">正式系统在支付服务商的页面上刷卡。本演示不要求任何银行卡信息。</span></label>
           </div>
         </fieldset>
-        <p class="row"><button class="btn" type="button" data-start-pay>创建付款</button></p>
+        <p class="row"><button class="btn" type="button" data-pay-sim>模拟支付定金</button></p>
+        <p class="small muted">这会创建一个沙盒付款请求，并代替支付服务商发送成功事件。系统核实该事件后才会确认预订。</p>
+        <div data-pay-note></div>
         <div data-pay-live hidden class="stack" style="gap:16px">
-          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status>等待付款</b><p class="small muted" data-pay-expiry></p></div></div>
-          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="沙盒二维码，无法扫描"></div><div class="stack small" style="max-width:32em"><p>只有在支付服务商通知款项已到账时，我们才会确认预订。点击按钮或上传付款凭证均不算数。</p><p class="muted">状态变化时，本页会自动更新。</p></div></div>
+          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status aria-live="polite"></b><p class="small muted" data-pay-expiry></p></div></div>
+          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="沙盒示意图，无法扫描"></div><div class="stack small" style="max-width:32em"><p>只有在支付服务商通知款项已到账时，我们才会确认预订。点击按钮或上传付款凭证均不算数。</p><p class="muted">此页面会自动更新。刷新会继续同一个请求，不会创建第二个。</p></div></div>
         </div>
       </div>
-      <div class="sandbox" data-sandbox hidden>
-        <h3>沙盒控件，模拟您的银行应用（仅限演示）</h3>
+      <details class="sandbox" data-sandbox>
+        <summary>测试其他结果（仅限演示）</summary>
+        <p class="small">这些按钮代替支付服务商的其他结果。</p>
         <div class="row">
-          <button class="btn small" type="button" data-act="succeed">付款成功</button>
+          <button class="btn small" type="button" data-act="pending" data-start-pay>创建付款请求并等待</button>
           <button class="btn small" type="button" data-act="fail">付款失败</button>
-          <button class="btn small" type="button" data-act="expire">让二维码过期</button>
+          <button class="btn small" type="button" data-act="expire">让请求过期</button>
           <button class="btn small" type="button" data-act="twice">支付服务商重复发送事件</button>
           <button class="btn small" type="button" data-act="later">保留到期后才付款</button>
         </div>
         <p class="small" data-sandbox-log aria-live="polite"></p>
-      </div>
+      </details>
     </div>
     <aside class="summary" data-summary><h2>预订摘要</h2><div data-summary-body><div class="skeleton" style="height:180px"></div></div></aside>
   </div>

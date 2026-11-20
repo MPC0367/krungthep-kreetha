@@ -1,12 +1,12 @@
 // The booking, payment, conditions and operations services. One implementation serves both the
 // static demo (running in the visitor's browser over a persisted in-memory store) and the Node
 // server (over SQLite). Every state change happens inside repo.run(), which is atomic.
-import { buildQuote } from "./rates.js";
+import { buildQuote, dayType, leadDays } from "./rates.js";
 import { findSlot, linkedSlot, slotsForDate, demoSheetRows, parseSlotId, dayConfig } from "./schedule.js";
 import { assertTransition } from "./states.js";
 import { freshness, latestReading, validateReading, defaultValidUntil } from "./conditions.js";
 import { require as requirePerm, can, maskName } from "./permissions.js";
-import { addDays, bkkDate, bkkInstant, bookingRef, clone, DomainError, randomId, secretToken, sha256Hex, stableStringify, toMinutes } from "./util.js";
+import { addDays, bkkDate, bkkInstant, bookingRef, clone, DomainError, isValidDate, randomId, secretToken, sha256Hex, stableStringify, toMinutes } from "./util.js";
 
 const LIVE_BOOKING = ["CONFIRMED", "CHECKED_IN", "COMPLETED"];
 const CATEGORIES = ["visitor", "member_guest", "member"];
@@ -84,7 +84,8 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     return { status: s.status, lastVerifiedAt: s.status === "ok" ? now : s.lastVerifiedAt || null, adapter: source };
   }
 
-  function horizon(now) { const today = bkkDate(now); return { first: today, last: addDays(today, S.horizonDays - 1) }; }
+  function horizon(now) { const today = bkkDate(now); return { first: today, last: addDays(today, S.horizonDays - 1), days: S.horizonDays }; }
+  const horizonText = () => `Online booking covers ${S.horizonDays} days, starting today`;
 
   function memberStatus(number) {
     const m = (config.demoMembers || []).find((x) => x.number.toUpperCase() === String(number || "").trim().toUpperCase());
@@ -92,8 +93,74 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     return m.status;
   }
 
-  function quoteFor(slot, category, partySize) {
-    return buildQuote({ rates, policy, holidays: config.holidays.dates, slot, category, partySize });
+  // Every quote is priced on the service's own Bangkok date (the injected clock), never the browser's.
+  function quoteFor(slot, category, partySize, now) {
+    return buildQuote({ rates, policy, holidays: config.holidays.dates, slot, category, partySize, bookingDate: bkkDate(now) });
+  }
+
+  /** Seats used per slot for a set of dates, from one pass over each table. A day whose sheet has not been
+   *  imported yet counts its deterministic sheet rows without writing them, so a month view stays a read. */
+  function seatIndex(t, now, dates) {
+    const idx = new Map();
+    const add = (id, n) => { if (id) idx.set(id, (idx.get(id) || 0) + n); };
+    for (const h of t.list("holds", (x) => x.status === "ACTIVE" && x.expiresAt > now)) { add(h.slotId, h.seats); add(h.linkedSlotId, h.seats); }
+    for (const b of t.list("bookings", (x) => LIVE_BOOKING.includes(x.status))) { add(b.slotId, b.seats); add(b.linkedSlotId, b.seats); }
+    for (const e of t.list("external", (x) => x.active !== false && dates.has(String(x.slotId).slice(0, 10)))) add(e.slotId, e.seats);
+    for (const d of dates) if (!t.get("kv", `sheet:${d}`)) for (const r of demoSheetRows(config, d)) add(r.slotId, r.seats);
+    return idx;
+  }
+  function remainingIn(idx, slot, linked) {
+    const r1 = slot.capacity - (idx.get(slot.id) || 0);
+    if (S.capacityModel === "flight" && r1 < slot.capacity) return 0;
+    if (!linked) return r1;
+    const r2 = linked.capacity - (idx.get(linked.id) || 0);
+    if (S.capacityModel === "flight" && r2 < linked.capacity) return 0;
+    return Math.min(r1, r2);
+  }
+  const quoteSummary = (q) => ({ perGolferMinor: q.perGolferMinor, totalMinor: q.totalMinor, depositMinor: q.depositMinor, balanceMinor: q.balanceMinor, priceMode: q.priceMode, deposit: q.deposit, planId: q.planId });
+
+  /** One day of the tee sheet for a party and golfer type. The tee sheet and the month calendar both read
+   *  it, so a calendar state always leads to the same result as opening that date. */
+  function dayView(t, now, date, { partySize, category, eligibility, clientId, idx }) {
+    const src = sourceHealth(t, now);
+    const slots = slotsForDate(config, date);
+    if (!slots.length) return { dayState: "closed", reason: dayConfig(config, date).reason || "closed", sessions: [], source: src };
+    if (src.status !== "ok") return { dayState: "stale", sessions: [], source: src };
+    idx ||= seatIndex(t, now, new Set([date]));
+    const mine = clientId ? t.list("holds", (x) => x.status === "ACTIVE" && x.expiresAt > now && x.clientId === clientId) : [];
+    const sessions = {};
+    for (const s of slots) {
+      if (s.tee !== "1" && s.tee !== "10") continue;
+      const linked = linkedSlot(config, s, slots);
+      let state = "available", reason = null, quote = null;
+      const rem = remainingIn(idx, s, linked);
+      const yours = mine.find((x) => x.slotId === s.id) || null;
+      const cl = closureFor(t, s);
+      if (s.startMs < now + 30 * 60e3) state = "past";
+      else if (cl) { state = "closed"; reason = cl.reason; }
+      else if (s.memberOnly && category !== "member") state = "member_only";
+      else if (!eligibility.ok) state = "not_eligible";
+      else {
+        try { quote = quoteSummary(quoteFor(s, category, partySize, now)); } catch { state = "no_rate"; }
+        if (state === "available") {
+          if (yours) state = "yours";
+          else if (rem <= 0) state = "full";
+          else if (rem < partySize) state = "too_small";
+          else if (rem < s.capacity) state = "partial";
+        }
+      }
+      (sessions[s.session] ||= []).push({ id: s.id, time: s.time, tee: s.tee, session: s.session, capacity: s.capacity, remaining: Math.max(0, rem), state, reason, quote, linkedSlotId: linked?.id || null, memberOnly: s.memberOnly, holdId: yours?.id || null });
+    }
+    const order = ["morning", "afternoon", "twilight"];
+    return { dayState: "open", source: src, sessions: order.filter((k) => sessions[k]).map((k) => ({ id: k, slots: sessions[k] })) };
+  }
+  function eligibilityFor(category, memberNumber) {
+    if (category !== "member") return { ok: true };
+    const st = memberStatus(memberNumber);
+    return st === "active" ? { ok: true } : { ok: false, reason: st === "suspended" ? "MEMBER_INACTIVE" : "MEMBER_NOT_VERIFIED" };
+  }
+  function checkParty(partySize) {
+    if (!Number.isInteger(partySize) || partySize < 1 || partySize > S.maxGroup) throw new DomainError("INVALID", `A group can be 1 to ${S.maxGroup} golfers`, { field: "partySize" });
   }
 
   // ---------- seed ----------
@@ -126,7 +193,16 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
       payment: pay ? { id: pay.id, status: pay.status, method: pay.method, amountMinor: pay.amountMinor, capturedMinor: pay.capturedMinor || 0, refundedMinor: pay.refundedMinor || 0, retainedMinor: pay.retainedMinor || 0, expiresAt: pay.expiresAt, providerRef: forStaff ? pay.providerRef : undefined, qrPayload: pay.status === "PENDING" ? pay.qrPayload : null } : null,
       refunds: refunds.map((r) => ({ id: r.id, status: r.status, amountMinor: r.amountMinor, reason: r.reason, createdAt: r.createdAt })),
       disposition: b.disposition || null, rescheduleCount: b.rescheduleCount || 0, history: forStaff ? b.history : undefined,
+      pass: passFor(b),
     };
+  }
+  /** The check-in card is derived on read from the confirmed record, so bookings made before the card
+   *  existed get one too. It encodes only the public reference: never the private code, contact details,
+   *  payment data or a link. After check-in it reports the real state instead of an admission card. */
+  function passFor(b) {
+    if (b.status === "CONFIRMED") return { state: "active", payload: `KKD1|${b.ref}` };
+    if (b.status === "CHECKED_IN" || b.status === "COMPLETED") return { state: b.status === "CHECKED_IN" ? "checked_in" : "completed" };
+    return null;
   }
 
   function alternatives(t, date, partySize, category, now, excludeId) {
@@ -134,7 +210,7 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     const out = [];
     for (const s of slots) {
       if (s.id === excludeId || s.startMs < now + 30 * 60e3 || closureFor(t, s) || (s.memberOnly && category !== "member")) continue;
-      try { quoteFor(s, category, partySize); } catch { continue; }
+      try { quoteFor(s, category, partySize, now); } catch { continue; }
       const linked = linkedSlot(config, s, slots);
       if (remaining(t, s, linked, now) >= partySize) out.push({ id: s.id, time: s.time, tee: s.tee });
       if (out.length >= 3) break;
@@ -146,7 +222,7 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     const slot = findSlot(config, slotId);
     if (!slot) throw new DomainError("INVALID", "That tee time does not exist", { field: "slotId" });
     const h = horizon(now);
-    if (slot.date < h.first || slot.date > h.last) throw new DomainError("OUTSIDE_HORIZON", "Online booking opens 14 days ahead", { date: slot.date });
+    if (slot.date < h.first || slot.date > h.last) throw new DomainError("OUTSIDE_HORIZON", horizonText(), { date: slot.date, first: h.first, last: h.last });
     if (!Number.isInteger(partySize) || partySize < 1 || partySize > S.maxGroup) throw new DomainError("INVALID", `A group can be 1 to ${S.maxGroup} golfers`, { field: "partySize" });
     if (!CATEGORIES.includes(category)) throw new DomainError("INVALID", "Choose who is playing", { field: "category" });
     if (slot.startMs < now + 30 * 60e3) throw new DomainError("PAST", "This tee time has passed or starts too soon to book online");
@@ -171,50 +247,61 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     async getPublicConfig() {
       return run((t, now) => {
         const h = horizon(now);
-        return { mode: config.mode, horizon: h, maxGroup: S.maxGroup, holdMinutes: S.holdMinutes, capacityModel: S.capacityModel, policy: clone(policy), today: bkkDate(now), serverTime: now, rateVersion: rates.versions[0]?.id, closedDays: Object.entries(S.days).filter(([, d]) => d.closed).map(([k, d]) => ({ day: k, reason: d.reason })) };
+        return { mode: config.mode, horizon: h, horizonDays: S.horizonDays, maxGroup: S.maxGroup, holdMinutes: S.holdMinutes, paymentWindowMinutes: S.paymentWindowMinutes, capacityModel: S.capacityModel, policy: clone(policy), today: bkkDate(now), serverTime: now, rateVersion: rates.versions[0]?.id, holidays: [...(config.holidays.dates || [])], closedDays: Object.entries(S.days).filter(([, d]) => d.closed).map(([k, d]) => ({ day: k, reason: d.reason })), store: repo.describe() };
       });
     },
 
     async listAvailability({ date, partySize = 2, category = "visitor", memberNumber, clientId } = {}) {
       return run((t, now) => {
         const h = horizon(now);
-        if (!date || date < h.first || date > h.last) throw new DomainError("OUTSIDE_HORIZON", "Choose a date within the next 14 days", { first: h.first, last: h.last });
+        if (!date || date < h.first || date > h.last) throw new DomainError("OUTSIDE_HORIZON", horizonText(), { first: h.first, last: h.last });
         partySize = Number(partySize);
-        if (!Number.isInteger(partySize) || partySize < 1 || partySize > S.maxGroup) throw new DomainError("INVALID", `A group can be 1 to ${S.maxGroup} golfers`, { field: "partySize" });
-        let eligibility = { ok: true };
-        if (category === "member") {
-          const st = memberStatus(memberNumber);
-          if (st !== "active") eligibility = { ok: false, reason: st === "suspended" ? "MEMBER_INACTIVE" : "MEMBER_NOT_VERIFIED" };
-        }
-        const src = sourceHealth(t, now);
-        const slots = slotsForDate(config, date);
-        if (!slots.length) return { date, dayState: "closed", reason: dayConfig(config, date).reason || "closed", sessions: [], serverTime: now, source: src, eligibility };
-        if (src.status !== "ok") return { date, dayState: "stale", sessions: [], serverTime: now, source: src, eligibility };
-        ensureSheetDay(t, date, now);
-        const sessions = {};
-        for (const s of slots) {
-          if (s.tee !== "1" && s.tee !== "10") continue;
-          const linked = linkedSlot(config, s, slots);
-          let state = "available", reason = null, quote = null;
-          const rem = remaining(t, s, linked, now);
-          const yours = clientId ? t.list("holds", (x) => x.status === "ACTIVE" && x.expiresAt > now && x.clientId === clientId && x.slotId === s.id)[0] : null;
-          if (s.startMs < now + 30 * 60e3) state = "past";
-          else if (closureFor(t, s)) { state = "closed"; reason = closureFor(t, s).reason; }
-          else if (s.memberOnly && category !== "member") state = "member_only";
-          else if (!eligibility.ok) state = "not_eligible";
-          else {
-            try { const q = quoteFor(s, category, partySize); quote = { perGolferMinor: q.perGolferMinor, totalMinor: q.totalMinor, depositMinor: q.depositMinor, priceMode: q.priceMode }; } catch { state = "no_rate"; }
-            if (state === "available") {
-              if (yours) state = "yours";
-              else if (rem <= 0) state = "full";
-              else if (rem < partySize) state = "too_small";
-              else if (rem < s.capacity) state = "partial";
-            }
+        checkParty(partySize);
+        const eligibility = eligibilityFor(category, memberNumber);
+        if (slotsForDate(config, date).length && sourceHealth(t, now).status === "ok") ensureSheetDay(t, date, now);
+        const v = dayView(t, now, date, { partySize, category, eligibility, clientId });
+        return { date, ...v, capacityModel: S.capacityModel, serverTime: now, eligibility, rateVersion: rates.versions[0]?.id };
+      });
+    },
+
+    /** One aggregate call for a calendar month (or any range inside the horizon): a state per date, the
+     *  number of bookable starts for this party and golfer type, and the deposit that date would take now.
+     *  Dates outside the horizon come back as "outside" so the picker never guesses. */
+    async listCalendar({ from, to, partySize = 2, category = "visitor", memberNumber } = {}) {
+      return run((t, now) => {
+        const h = horizon(now);
+        partySize = Number(partySize);
+        checkParty(partySize);
+        if (!isValidDate(from) || !isValidDate(to) || to < from) throw new DomainError("INVALID", "Give a date range", { field: "from" });
+        if (leadDays(from, to) > 42) throw new DomainError("INVALID", "Ask for one month at a time", { field: "to" });
+        const eligibility = eligibilityFor(category, memberNumber);
+        const dates = []; for (let d = from; d <= to; d = addDays(d, 1)) dates.push(d);
+        const inside = dates.filter((d) => d >= h.first && d <= h.last);
+        const idx = seatIndex(t, now, new Set(inside));
+        const days = dates.map((date) => {
+          const base = { date, dayType: dayType(date, config.holidays.dates), holiday: config.holidays.dates.includes(date) };
+          if (date < h.first || date > h.last) return { ...base, state: "outside" };
+          const v = dayView(t, now, date, { partySize, category, eligibility, idx });
+          if (v.dayState !== "open") return { ...base, state: v.dayState, reason: v.reason || null };
+          const all = v.sessions.flatMap((s) => s.slots);
+          const ok = all.filter((s) => ["available", "partial", "yours"].includes(s.state));
+          const live = all.filter((s) => s.state !== "past");
+          let state = "open";
+          if (!ok.length) {
+            if (!live.length) state = "past";
+            else if (!eligibility.ok) state = "not_eligible";
+            else if (live.every((s) => s.state === "closed")) state = "closed";
+            else if (live.some((s) => s.state === "too_small")) state = "no_fit";
+            else if (live.some((s) => s.state === "full")) state = "full";
+            else if (live.every((s) => ["no_rate", "member_only"].includes(s.state))) state = "no_rate";
+            else state = "full";
           }
-          (sessions[s.session] ||= []).push({ id: s.id, time: s.time, tee: s.tee, session: s.session, capacity: s.capacity, remaining: Math.max(0, rem), state, reason, quote, linkedSlotId: linked?.id || null, memberOnly: s.memberOnly, holdId: yours?.id || null });
-        }
-        const order = ["morning", "afternoon", "twilight"];
-        return { date, dayState: "open", capacityModel: S.capacityModel, serverTime: now, source: src, eligibility, rateVersion: rates.versions[0]?.id, sessions: order.filter((k) => sessions[k]).map((k) => ({ id: k, slots: sessions[k] })) };
+          const q = ok[0]?.quote || null;
+          const prices = ok.map((s) => s.quote?.perGolferMinor).filter((p) => p != null);
+          return { ...base, state, reason: state === "closed" ? (live.find((s) => s.reason)?.reason || null) : null, bookable: ok.length, starts: live.length,
+            fromMinor: prices.length ? Math.min(...prices) : null, depositMinor: q?.depositMinor ?? null, deposit: q?.deposit || null, priceMode: q?.priceMode || null };
+        });
+        return { from, to, horizon: h, partySize, category, eligibility, serverTime: now, source: sourceHealth(t, now), days };
       });
     },
 
@@ -239,8 +326,8 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
           old.status = "RELEASED"; t.put("holds", old);
           if (b && b.status === "HELD") { setBooking(t, now, b, "CANCELLED", null, "Replaced by a new selection"); t.put("bookings", b); }
         }
-        let quote;
-        try { quote = quoteFor(slot, category, partySize); } catch (e) { throw e; }
+        // The quote is a snapshot of this moment: a hold made before Bangkok midnight keeps its tier.
+        const quote = quoteFor(slot, category, partySize, now);
         ensureSheetDay(t, slot.date, now);
         const seats = seatsFor(slot, partySize);
         const rem = remaining(t, slot, linked, now);
@@ -377,6 +464,8 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
         const b = t.get("bookings", p.bookingId);
         if (ev.type === "payment.succeeded") {
           if (p.status === "SUCCEEDED" || p.status.startsWith("REFUND") || p.status.endsWith("REFUNDED")) return record("already-settled");
+          // The provider must report the amount this intent asked for; anything else waits for staff.
+          if (ev.data.amountMinor !== p.amountMinor) { t.insert("exceptions", { id: randomId("ex"), kind: "AMOUNT_MISMATCH", bookingId: b?.id || null, paymentId: p.id, status: "OPEN", createdAt: now, detail: { expected: p.amountMinor, reported: ev.data.amountMinor } }); return record("amount-mismatch"); }
           setPayment(p, "SUCCEEDED"); p.capturedMinor = ev.data.amountMinor; p.settledAt = now; t.put("payments", p);
           const h = t.get("holds", b.holdId);
           if (b.status === "PAYMENT_PENDING" && h && h.status === "ACTIVE" && h.expiresAt > now) {
@@ -452,16 +541,20 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
       return r;
     },
 
-    async rescheduleBooking({ ref, token, newSlotId }) {
+    /** preview: true shows the new total, the deposit already paid and the revised balance without moving. */
+    async rescheduleBooking({ ref, token, newSlotId, preview = false }) {
       const hash = await sha256Hex(String(token || ""));
-      return run((t, now) => {
+      const r = await run((t, now) => {
         const b = t.list("bookings", { ref: String(ref || "").toUpperCase() })[0];
         if (!b || b.manageTokenHash !== hash) throw new DomainError("NOT_FOUND", "We could not find a booking with those details");
         if (b.status !== "CONFIRMED") throw new DomainError("NOT_CHANGEABLE", "Only confirmed bookings can be moved");
-        if ((b.rescheduleCount || 0) >= policy.reschedule.limit) throw new DomainError("LIMIT", "This booking has already been moved once. Please call the booking desk.");
-        if (now > b.startMs - policy.reschedule.untilHoursBefore * 3600e3) throw new DomainError("TOO_LATE", "Online changes close 48 hours before the tee time");
-        return move(t, now, b, newSlotId, null);
+        const pol = b.policy?.reschedule || policy.reschedule;
+        if ((b.rescheduleCount || 0) >= pol.limit) throw new DomainError("LIMIT", "This booking has already been moved once. Please call the booking desk.");
+        if (now > b.startMs - pol.untilHoursBefore * 3600e3) throw new DomainError("TOO_LATE", `Online changes close ${pol.untilHoursBefore} hours before the tee time`);
+        return move(t, now, b, newSlotId, null, { preview });
       });
+      if (!preview) notify("availability", {});
+      return r;
     },
 
     async getConditions() {
@@ -498,7 +591,7 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
         const rem = remaining(t, slot, linked, now);
         if (rem < seats) throw new DomainError("NO_CAPACITY", `Only ${rem} place(s) left at this time`, { remaining: rem });
         let quote;
-        try { quote = quoteFor(slot, category, Number(partySize)); } catch { quote = { priceMode: "at_counter", totalMinor: null, depositMinor: 0, balanceMinor: null, rateVersion: rates.versions[0]?.id, policyVersion: `${policy.id}@${policy.version}` }; }
+        try { quote = quoteFor(slot, category, Number(partySize), now); } catch { quote = { priceMode: "at_counter", totalMinor: null, depositMinor: 0, balanceMinor: null, rateVersion: rates.versions[0]?.id, policyVersion: `${policy.id}@${policy.version}` }; }
         const b = { id: randomId("bk"), ref: bookingRef(), holdId: null, slotId: slot.id, linkedSlotId: linked?.id || null, date: slot.date, time: slot.time, tee: slot.tee, session: slot.session, startMs: slot.startMs, seats, partySize: Number(partySize), category,
           status: "HELD", attendance: "EXPECTED", syncStatus: "PENDING_EXPORT", channel, lead: { name: String(lead.name || "").trim() || "Walk-in", phone: String(lead.phone || ""), email: "" }, quote, policy: clone(policy), createdAt: now, history: [{ at: now, from: null, to: "HELD", actor: actor.id, note: `${channel} booking` }], exemption: "pay_at_club" };
         setBooking(t, now, b, "CONFIRMED", actor, "Staff booking, deposit taken at the counter");
@@ -524,9 +617,13 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
         b.attendance = n < b.partySize ? "PARTIAL" : "CHECKED_IN";
         b.arrived = n;
         const p = t.list("payments", (x) => x.bookingId === b.id && x.status === "SUCCEEDED")[0];
-        if (p && n < b.partySize && policy.partialAttendance === "retain_absent_share" && b.policy.deposit.basis === "per_golfer") {
-          p.retainedMinor = Math.min(p.capturedMinor, b.policy.deposit.amountMinor * (b.partySize - n)); t.put("payments", p);
-          b.disposition = { kind: "partial", retainedMinor: p.retainedMinor, creditedMinor: p.capturedMinor - p.retainedMinor };
+        const basis = b.quote?.deposit?.basis || b.policy?.deposit?.basis;
+        if (p && n < b.partySize && (b.policy?.partialAttendance || policy.partialAttendance) === "retain_absent_share" && basis === "per_golfer") {
+          // The absent golfers' share of what was actually captured (THB 500 for two on the advance tier
+          // gives THB 250 each), never the policy's flat amount, and never more than is still held.
+          const share = Math.floor((p.capturedMinor * (b.partySize - n)) / b.partySize);
+          p.retainedMinor = Math.max(0, Math.min(share, heldOf(t, p))); t.put("payments", p);
+          b.disposition = { kind: "partial", retainedMinor: p.retainedMinor, creditedMinor: p.capturedMinor - p.retainedMinor, perGolferMinor: Math.floor(p.capturedMinor / b.partySize) };
         } else if (p) b.disposition = { kind: "credited", creditedMinor: p.capturedMinor };
         t.put("bookings", b);
         audit(t, now, actor, "booking.checkin", b.id, before, { status: b.status, attendance: b.attendance, arrived: n }, null);
@@ -546,9 +643,9 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
         setBooking(t, now, b, "NO_SHOW", actor, reason);
         b.attendance = "NO_SHOW";
         const p = t.list("payments", (x) => x.bookingId === b.id && x.status === "SUCCEEDED")[0];
-        // The deposit already paid is kept as the no-show fee. No new charge is created.
-        if (p) { p.retainedMinor = p.capturedMinor; t.put("payments", p); }
-        b.disposition = { kind: "no_show", retainedMinor: p ? p.capturedMinor : 0 };
+        // The deposit still held is kept as the no-show fee. No new charge is created.
+        if (p) { p.retainedMinor = heldOf(t, p); t.put("payments", p); }
+        b.disposition = { kind: "no_show", retainedMinor: p ? p.retainedMinor : 0 };
         t.put("bookings", b);
         audit(t, now, actor, "booking.noshow", b.id, before, { status: "NO_SHOW", retainedMinor: b.disposition.retainedMinor }, reason);
         return { booking: bookingView(t, b, { forStaff: true, actor }) };
@@ -587,12 +684,25 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
       return r;
     },
 
-    async staffMove({ bookingId, newSlotId }, actor) {
+    async staffMove({ bookingId, newSlotId, preview = false }, actor) {
       requirePerm(actor, "booking.move");
       return run((t, now) => {
         const b = t.get("bookings", bookingId);
         if (!b || b.status !== "CONFIRMED") throw new DomainError("NOT_CHANGEABLE", "Only confirmed bookings can be moved");
-        return move(t, now, b, newSlotId, actor);
+        return move(t, now, b, newSlotId, actor, { preview });
+      });
+    },
+
+    /** Desk lookup for the check-in card: a staff member with tee-sheet access reads the booking by its
+     *  public reference. Reading it changes nothing; check-in stays a separate, deliberate action. */
+    async staffFindBooking({ ref }, actor) {
+      requirePerm(actor, "teesheet.view");
+      const raw = String(ref || "").trim().toUpperCase();
+      const clean = raw.startsWith("KKD1|") ? raw.slice(5) : raw;
+      return run((t) => {
+        const b = t.list("bookings", { ref: clean })[0];
+        if (!b) throw new DomainError("NOT_FOUND", "No booking has that reference");
+        return { booking: bookingView(t, b, { forStaff: true, actor }) };
       });
     },
 
@@ -602,7 +712,7 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
       return run((t, now) => {
         const p = t.get("payments", paymentId);
         if (!p) throw new DomainError("NOT_FOUND", "Payment not found");
-        const available = p.capturedMinor - (p.refundedMinor || 0) - pendingRefunds(t, p.id);
+        const available = heldOf(t, p) - (p.retainedMinor || 0); // captured, less refunds and what the club keeps
         const amt = Number(amountMinor);
         if (!(amt > 0 && amt <= available)) throw new DomainError("INVALID", "Refund must be more than zero and no more than the amount still held", { available });
         const b = t.get("bookings", p.bookingId);
@@ -852,6 +962,8 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
 
   function paidOf(t, b) { return t.list("payments", (x) => x.bookingId === b.id && ["SUCCEEDED", "REFUND_PENDING", "PARTIALLY_REFUNDED"].includes(x.status)).reduce((s, p) => s + p.capturedMinor - (p.refundedMinor || 0), 0); }
   function pendingRefunds(t, paymentId) { return t.list("refunds", (r) => r.paymentId === paymentId && ["REQUESTED", "SUBMITTED"].includes(r.status)).reduce((s, r) => s + r.amountMinor, 0); }
+  /** Funds still held on a payment: captured, less refunds completed or in flight. */
+  function heldOf(t, p) { return Math.max(0, p.capturedMinor - (p.refundedMinor || 0) - pendingRefunds(t, p.id)); }
 
   function cancellationOutcome(t, b, now) {
     const deadline = b.startMs - b.policy.cancellation.freeUntilHoursBefore * 3600e3;
@@ -894,9 +1006,12 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     return "refund-completed";
   }
 
-  function move(t, now, b, newSlotId, actor) {
+  function move(t, now, b, newSlotId, actor, { preview = false } = {}) {
     const slot = findSlot(config, newSlotId);
     if (!slot) throw new DomainError("INVALID", "Unknown tee time");
+    const h = horizon(now);
+    if (slot.date > h.last) throw new DomainError("OUTSIDE_HORIZON", horizonText(), { first: h.first, last: h.last });
+    if (slot.id === b.slotId) throw new DomainError("INVALID", "That is the booking's current time");
     if (slot.startMs < now + 30 * 60e3) throw new DomainError("PAST", "That tee time has passed");
     if (closureFor(t, slot)) throw new DomainError("CLOSED", "That tee time is closed");
     if (slot.memberOnly && b.category !== "member") throw new DomainError("NOT_ELIGIBLE", "That time is reserved for members");
@@ -905,16 +1020,23 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
     // Secure the new capacity before the old booking lets go of its own.
     const rem = remaining(t, slot, linked, now, { excludeBooking: b.id });
     if (rem < b.seats) throw new DomainError("NO_CAPACITY", "The new time does not have room for your group", { remaining: rem });
-    let newQuote = b.quote;
-    try { newQuote = quoteFor(slot, b.category, b.partySize); } catch {}
+    // No published rate for the new time: the booking stays exactly as it is.
+    let newQuote;
+    try { newQuote = quoteFor(slot, b.category, b.partySize, now); }
+    catch (e) { throw new DomainError("NO_RATE", "The new time has no published rate for this booking, so it has not been moved", { slotId: slot.id }); }
+    // The deposit already paid moves with the booking, even across the advance-deposit boundary.
+    const paid = b.quote.depositMinor ?? 0;
+    const balance = newQuote.totalMinor != null ? newQuote.totalMinor - paid : null;
     const before = { slotId: b.slotId, totalMinor: b.quote.totalMinor };
     const diff = (newQuote.totalMinor ?? 0) - (b.quote.totalMinor ?? 0);
-    Object.assign(b, { slotId: slot.id, linkedSlotId: linked?.id || null, date: slot.date, time: slot.time, tee: slot.tee, session: slot.session, startMs: slot.startMs, quote: { ...newQuote, depositMinor: b.quote.depositMinor, balanceMinor: newQuote.totalMinor != null ? newQuote.totalMinor - b.quote.depositMinor : null }, rescheduleCount: (b.rescheduleCount || 0) + 1, syncStatus: "PENDING_EXPORT", updatedAt: now });
+    const summary = { slotId: slot.id, date: slot.date, time: slot.time, tee: slot.tee, totalMinor: newQuote.totalMinor, depositPaidMinor: paid, balanceMinor: balance, priceDifferenceMinor: diff, planName: newQuote.planName, priceMode: newQuote.priceMode };
+    if (preview) return { preview: summary, booking: bookingView(t, b, { forStaff: !!actor, actor }) };
+    Object.assign(b, { slotId: slot.id, linkedSlotId: linked?.id || null, date: slot.date, time: slot.time, tee: slot.tee, session: slot.session, startMs: slot.startMs, quote: { ...newQuote, depositMinor: paid, balanceMinor: balance, deposit: b.quote.deposit || null, depositKeptFrom: before.slotId, lines: undefined }, rescheduleCount: (b.rescheduleCount || 0) + 1, syncStatus: "PENDING_EXPORT", updatedAt: now });
     b.history.push({ at: now, from: "CONFIRMED", to: "CONFIRMED", actor: actor ? actor.id : "customer", note: `Moved from ${before.slotId} to ${slot.id}` });
     t.put("bookings", b);
     outbox(t, now, "export-booking", `${b.id}:move:${b.rescheduleCount}`, { bookingId: b.id });
     audit(t, now, actor, "booking.move", b.id, before, { slotId: slot.id, priceDifferenceMinor: diff }, null);
-    return { booking: bookingView(t, b, { forStaff: !!actor, actor }), priceDifferenceMinor: diff };
+    return { booking: bookingView(t, b, { forStaff: !!actor, actor }), priceDifferenceMinor: diff, moved: summary };
   }
 
   function conditionsView(t, now) {
@@ -938,5 +1060,5 @@ export function createHost({ repo, config, rates, provider, clock = () => Date.n
   return api;
 }
 
-export const PUBLIC_METHODS = ["health", "getPublicConfig", "listAvailability", "createHold", "getHold", "releaseHold", "createBooking", "startPayment", "sandboxAct", "getBookingStatus", "lookupBooking", "cancelBooking", "rescheduleBooking", "getConditions"];
-export const STAFF_METHODS = ["staffTeeSheet", "staffCreateBooking", "staffCheckIn", "staffNoShow", "staffCorrectAttendance", "staffCancel", "staffMove", "staffRefund", "staffSettleRefunds", "staffCloseSlots", "staffReopen", "listExceptions", "resolveException", "auditLog", "draftReading", "publishReading", "correctReading", "withdrawReading", "setCourseStatus", "addNotice", "removeNotice", "listReadings", "syncHealth", "syncImport", "syncExport", "resolveConflict", "setSimulation", "setClockOffset", "deliverQueuedEvents"];
+export const PUBLIC_METHODS = ["health", "getPublicConfig", "listAvailability", "listCalendar", "createHold", "getHold", "releaseHold", "createBooking", "startPayment", "sandboxAct", "getBookingStatus", "lookupBooking", "cancelBooking", "rescheduleBooking", "getConditions"];
+export const STAFF_METHODS = ["staffTeeSheet", "staffFindBooking", "staffCreateBooking", "staffCheckIn", "staffNoShow", "staffCorrectAttendance", "staffCancel", "staffMove", "staffRefund", "staffSettleRefunds", "staffCloseSlots", "staffReopen", "listExceptions", "resolveException", "auditLog", "draftReading", "publishReading", "correctReading", "withdrawReading", "setCourseStatus", "addNotice", "removeNotice", "listReadings", "syncHealth", "syncImport", "syncExport", "resolveConflict", "setSimulation", "setClockOffset", "deliverQueuedEvents"];

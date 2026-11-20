@@ -62,29 +62,33 @@
       <h1 class="h1">デポジットを支払う</h1>
       <div data-flow-missing hidden class="empty-state"><b>この予約が見つかりませんでした</b><a class="btn" href="../../../ja/tee-times/index.html">時間を選択 <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
       <div class="panel" data-pay-panel>
-        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">お支払い方法</legend>
+        <div class="notice demo"><span>デモのみです。お金は一切請求されません。</span></div>
+        <fieldset style="border:0;padding:0;margin:0" class="stack"><legend class="label" style="margin-bottom:8px">模擬の支払い方法</legend>
           <div class="pay-methods">
-            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay QRコード</b><span class="small muted">タイの銀行アプリで読み取ってください。このQRコードは今回のお支払い専用です。</span></label>
-            <label class="pay-method"><input type="radio" name="method" value="card"><b>クレジットカードまたはデビットカード</b><span class="small muted">決済事業者のページで入力します。当サイトがカード番号を見ることはありません。</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="promptpay" checked><b>PromptPay QRコード</b><span class="small muted">本番システムでは銀行アプリ用の QR を表示します。ここの QR は読み取れない図なので、代わりに下のボタンをお使いください。</span></label>
+            <label class="pay-method"><input type="radio" name="method" value="card"><b>クレジットカードまたはデビットカード</b><span class="small muted">本番システムでは決済事業者のページでカードを受け付けます。このデモではカード情報を求めません。</span></label>
           </div>
         </fieldset>
-        <p class="row"><button class="btn" type="button" data-start-pay>支払いを作成</button></p>
+        <p class="row"><button class="btn" type="button" data-pay-sim>デポジットの支払いを模擬する</button></p>
+        <p class="small muted">サンドボックスの支払いリクエストを作成し、決済事業者の代わりに成功イベントを送ります。システムがそのイベントを確認して初めて予約が確定します。</p>
+        <div data-pay-note></div>
         <div data-pay-live hidden class="stack" style="gap:16px">
-          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status>お支払い待ち</b><p class="small muted" data-pay-expiry></p></div></div>
-          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="サンドボックス用QRコードのため、読み取りできません"></div><div class="stack small" style="max-width:32em"><p>決済事業者から入金完了の通知を受けた時点でのみ予約を確定します。ボタン操作や振込明細のアップロードだけでは確定しません。</p><p class="muted">ステータスが変わると、このページは自動で更新されます。</p></div></div>
+          <div class="status-big"><span class="dot" aria-hidden="true"></span><div><b data-pay-status aria-live="polite"></b><p class="small muted" data-pay-expiry></p></div></div>
+          <div class="row" style="align-items:start;gap:24px"><div class="qr" data-qr data-label="サンドボックスの図、読み取りできません"></div><div class="stack small" style="max-width:32em"><p>決済事業者から入金完了の通知を受けた時点でのみ予約を確定します。ボタン操作や振込明細のアップロードだけでは確定しません。</p><p class="muted">このページは自動で更新されます。再読み込みしても同じリクエストを続けるだけで、2 件目は作成しません。</p></div></div>
         </div>
       </div>
-      <div class="sandbox" data-sandbox hidden>
-        <h3>銀行アプリの代わりとなるサンドボックス操作（デモ専用）</h3>
+      <details class="sandbox" data-sandbox>
+        <summary>ほかの結果を試す（デモのみ）</summary>
+        <p class="small">これらは決済事業者からのほかの結果の代わりです。</p>
         <div class="row">
-          <button class="btn small" type="button" data-act="succeed">支払いに成功する</button>
+          <button class="btn small" type="button" data-act="pending" data-start-pay>リクエストを作成して待つ</button>
           <button class="btn small" type="button" data-act="fail">支払いが失敗する</button>
-          <button class="btn small" type="button" data-act="expire">QRコードを期限切れにする</button>
+          <button class="btn small" type="button" data-act="expire">リクエストを期限切れにする</button>
           <button class="btn small" type="button" data-act="twice">決済事業者が同じイベントを2回送信</button>
           <button class="btn small" type="button" data-act="later">仮押さえ終了後に遅れて支払う</button>
         </div>
         <p class="small" data-sandbox-log aria-live="polite"></p>
-      </div>
+      </details>
     </div>
     <aside class="summary" data-summary><h2>予約内容</h2><div data-summary-body><div class="skeleton" style="height:180px"></div></div></aside>
   </div>
